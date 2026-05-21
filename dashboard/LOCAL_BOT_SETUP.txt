@@ -1,0 +1,101 @@
+# 🦙 Pavi Local Bot Setup Guide
+# When you get a better device, follow these steps to enable FREE local AI
+
+## Step 1: Check Your RAM First
+You need at LEAST 6GB of FREE RAM.
+- Open Task Manager → Performance → Memory
+- Check "Available" amount
+- If less than 6GB free → use qwen2.5-coder:3b (lighter)
+- If 6GB+ free → use qwen2.5-coder:7b (recommended)
+
+---
+
+## Step 2: Install Ollama
+1. Go to: https://ollama.com
+2. Click "Download for Windows"
+3. Run the installer (OllamaSetup.exe)
+4. It will install automatically and run in the background (look for the llama icon in your system tray)
+
+---
+
+## Step 3: Download the Right Model
+Open a terminal (CMD or PowerShell) and run ONE of these:
+
+# RECOMMENDED (needs ~5GB free RAM):
+ollama pull qwen2.5-coder:7b
+
+# LIGHTWEIGHT (needs ~3GB free RAM):
+ollama pull qwen2.5-coder:3b
+
+# BUDGET (needs ~2GB free RAM, weaker):
+ollama pull llama3.2:3b
+
+# PREMIUM (needs ~10GB free RAM, best reasoning):
+ollama pull phi4:14b
+
+Wait for it to finish downloading (may take a few minutes depending on internet speed).
+
+---
+
+## Step 4: Verify It Works
+Run this command in terminal:
+ollama run qwen2.5-coder:7b "say hello"
+
+If it replies, you are good to go!
+
+---
+
+## Step 5: Configure Pavi
+1. Start your Pavi server (double-click start.bat)
+2. Open browser: http://localhost:3000
+3. Toggle ON "Advanced Mode"
+4. Go to "Maker & Checker Engine"
+
+### Worker (Heavy Lifter) Settings:
+- AI Provider: Local Bot (Ollama - Free)
+- URL: http://localhost:11434/v1/chat/completions
+- Model: qwen2.5-coder:7b   <-- change to :3b if you used the lighter one
+- API Key: LEAVE EMPTY (local models don't need a key)
+
+### Checker (Reviewer) Settings:
+- AI Provider: Groq (Fast, Free)
+- URL: https://api.groq.com/openai/v1/chat/completions
+- Model: llama-3.3-70b-versatile
+- API Key: YOUR_GROQ_KEY_HERE   <-- keep your existing Groq key here
+
+5. Click "Save Configuration"
+
+---
+
+## What Changes After This Setup:
+BEFORE: All tasks go to Groq API (rate limited, internet required)
+AFTER:  Planning & code writing → Local Bot (FREE, unlimited, offline)
+        Quality checking & healing → Groq (only used when local bot makes mistakes)
+
+---
+
+## Troubleshooting
+
+### "Local bot not responding":
+- Make sure Ollama is running (check system tray for llama icon)
+- Run: ollama serve  (in a terminal, keep it open)
+- Pavi will auto-fallback to Groq if Ollama is offline
+
+### "Out of memory" crash:
+- Switch to the lighter model: ollama pull qwen2.5-coder:3b
+- Update model name in Pavi config to qwen2.5-coder:3b
+
+### Model is very slow:
+- Close other apps to free up RAM
+- Or use qwen2.5-coder:3b instead
+
+---
+
+## File Placement Summary:
+This file: READ ONLY (keep it for reference)
+Ollama installer: Run it, installs automatically to C:\Users\YOU\AppData\Local\Programs\Ollama
+Models download to: C:\Users\YOU\.ollama\models  (auto, no action needed)
+Pavi config: C:\Users\MR HACKER\Desktop\ruflo-main\dashboard\config.json  (auto-saved when you click Save)
+
+---
+Created for Pavi Dashboard | ruflo-main project

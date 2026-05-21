@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pavi Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Pavi Evolution: Mermaid live graph -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({ startOnLoad: false, theme: 'dark', themeVariables: { primaryColor: '#6366f1', edgeLabelBackground: '#1a1a2e', lineColor: '#a78bfa' } });</script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
+</head>
+<body class="dark-theme">
+  <!-- Background Elements -->
+  <div class="bg-shape bg-shape-1"></div>
+  <div class="bg-shape bg-shape-2"></div>
+  <div class="bg-shape bg-shape-3"></div>
+
+  <div class="dashboard-container glass-panel">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon"></div>
+          <h1>Pavi</h1>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <ul id="magic-nav">
+          <li class="active"><a href="#" data-target="magic-panel"><i class="icon">✨</i> AI Magic</a></li>
+          <li><a href="#" data-target="workspaces-panel"><i class="icon">📁</i> Workspaces</a></li>
+          <li><a href="#" data-target="pending-panel"><i class="icon">📝</i> Write Audit <span id="pending-writes-badge" style="display: none; background: #6366f1; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; margin-left: 4px;">0</span></a></li>
+          <li><a href="#" data-target="sync-panel"><i class="icon">☁️</i> Cloud Sync</a></li>
+          <li><a href="#" data-target="history-panel"><i class="icon">📜</i> Swarm History</a></li>
+          <li><a href="#" data-target="mobile-panel"><i class="icon">📱</i> Mobile Connect</a></li>
+        </ul>
+        <ul id="advanced-nav" style="display: none; border-top: 1px solid var(--glass-border); padding-top: 1rem; margin-top: 1rem;">
+          <li><a href="#" data-target="swarm-panel"><i class="icon">🤖</i> Swarm Coordination</a></li>
+          <li><a href="#" data-target="memory-panel"><i class="icon">🧠</i> Memory & Agents</a></li>
+          <li><a href="#" data-target="bot-roles-panel"><i class="icon">🤖</i> Bot Roles</a></li>
+          <!-- <li><a href="#" data-target="skills-panel"><i class="icon">⚡</i> Skills Explorer</a></li> -->
+          <li><a href="#" data-target="harvester-panel"><i class="icon">📡</i> API Harvester</a></li>
+          <li><a href="#" data-target="zip-ingester-panel"><i class="icon">🗜️</i> Brain Dump (Zip)</a></li>
+          <li><a href="#" data-target="model-config-panel"><i class="icon">⚙️</i> Maker & Checker Engine</a></li>
+          <li><a href="#" data-target="plugins-panel"><i class="icon">🧩</i> Plugin Manager</a></li>
+          <li><a href="#" data-target="architect-panel"><i class="icon">👑</i> Supreme Architect</a></li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer" style="flex-direction: column; align-items: flex-start; gap: 1rem; width: 100%;">
+        <label class="toggle-switch">
+          <input type="checkbox" id="advanced-mode-toggle">
+          <span class="slider round"></span>
+          <span class="toggle-label">Advanced Mode</span>
+        </label>
+        <div style="display: flex; gap: 0.5rem; width: 100%; align-items: center;">
+          <button id="theme-toggle" class="btn-icon" aria-label="Toggle Theme" style="flex-shrink: 0;">
+            <span class="sun-icon">☀️</span>
+            <span class="moon-icon">🌙</span>
+          </button>
+          <button id="logout-btn" style="flex: 1; border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px; justify-content: center; background: rgba(239, 68, 68, 0.05); color: #f87171; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.15)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.05)'">
+            <span>🚪</span> Logout
+          </button>
+        </div>
+        <!-- Model Selector Panel -->
+        <div class="card" id="model-selector-panel" style="width: 100%; margin-top: 10px; padding: 10px;">
+          <h3 style="font-size: 0.85rem; margin-top: 0; margin-bottom: 8px;">🤖 Local Model</h3>
+          <select id="local-model-select" style="width: 100%; padding: 4px; border-radius: 4px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: var(--text-primary); font-size: 0.8rem;">
+            <option value="phi3:mini">Loading models...</option>
+          </select>
+        </div>
+        <!-- Health Status Panel -->
+        <div class="card" id="health-panel" style="width: 100%; margin-top: 10px; padding: 10px;">
+          <h3 style="font-size: 0.85rem; margin-top: 0; margin-bottom: 8px;">System Health</h3>
+          <div id="health-indicators">
+            <div class="health-row" id="health-db">
+              <span class="health-dot" id="dot-db"></span>
+              <span style="font-size: 0.75rem;">SQLite</span>
+              <span class="health-detail" id="detail-db">—</span>
+            </div>
+            <div class="health-row" id="health-ollama">
+              <span class="health-dot" id="dot-ollama"></span>
+              <span style="font-size: 0.75rem;">Ollama</span>
+              <span class="health-detail" id="detail-ollama">—</span>
+            </div>
+            <div class="health-row" id="health-agentdb">
+              <span class="health-dot" id="dot-agentdb"></span>
+              <span style="font-size: 0.75rem;">AgentDB</span>
+              <span class="health-detail" id="detail-agentdb">—</span>
+            </div>
+            <div class="health-row" id="health-github">
+              <span class="health-dot" id="dot-github"></span>
+              <span style="font-size: 0.75rem;">GitHub API</span>
+              <span class="health-detail" id="detail-github">—</span>
+            </div>
+            <!-- GitHub rate limit progress bar (populated by JS) -->
+            <div id="github-rate-badge" style="display:none; margin-top:6px; padding:6px 8px; background:rgba(0,0,0,0.2); border-radius:6px; border:1px solid var(--glass-border);"></div>
+          </div>
+          <button id="refresh-health-btn" class="btn btn-small" style="width: 100%; margin-top: 8px; font-size: 0.75rem; padding: 4px;">↻ Refresh</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="main-header">
+        <h2>Dashboard</h2>
+        <div class="header-actions">
+          <input type="text" id="target-dir" class="header-input glass-input" placeholder="Target Project Path (e.g. C:/my-project)" title="Leave blank to use default (pavi-main)">
+          <span class="status-badge online">System Online</span>
+        </div>
+      </header>
+
+      <div class="panels-container">
+        <!-- Magic Panel (Non-Technical Mode) -->
+        <section id="magic-panel" class="panel active">
+          <!-- Workspace Settings (Folder, Files, etc.) -->
+          <div class="card glass-card full-width" style="margin-bottom: 0.75rem; padding: 0.75rem 1rem; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between;">
+             <div style="display: flex; gap: 0.5rem; align-items: center; flex: 1; min-width: 300px;">
+                <label for="magic-target-dir" style="margin: 0; white-space: nowrap; color: var(--text-secondary);">Workspace:</label>
+                <input type="text" id="magic-target-dir" name="magic-target-dir" placeholder="Project folder path" style="flex: 1; padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0, 0, 0, 0.2); color: white;">
+                <button type="button" class="btn btn-secondary" id="browse-folder-btn" style="padding: 0.4rem 0.8rem; border-radius: 6px;">Browse...</button>
+             </div>
+             <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <button type="button" id="pick-files-btn" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85em; border-radius: 6px;">🎯 Target Files</button>
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; color: var(--text-secondary); font-size: 0.85em;">
+                  <input type="checkbox" id="autonomous-toggle" style="accent-color: var(--accent-primary);"> Autonomous
+                </label>
+             </div>
+          </div>
+          <div id="target-files-list" style="display: none; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--glass-border);"></div>
+
+          <!-- Unified Chat & Execution Interface -->
+          <div class="card glass-card full-width" style="display: flex; flex-direction: column; height: calc(100vh - 200px); padding: 0; overflow: hidden;">
+             
+             <!-- Header / Status -->
+             <div class="cli-header" style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--glass-border); background: rgba(0,0,0,0.1); margin-bottom: 0;">
+                <h3 style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                  ✨ Magic Workspace
+                  <span id="magic-loading-spinner" style="display: none; font-size: 0.8em; color: var(--accent-primary);">⏳ Working...</span>
+                  <span id="magic-learning-spinner" style="display:none; font-size: 0.8em; margin-left: 10px; color: #10b981;">🧠 Background Learning Active...</span>
+                  <span id="shield-badge" style="display:none; font-size:0.78em; padding:2px 10px; border-radius:20px; background:rgba(99,102,241,0.2); border:1px solid #6366f1; color:#a78bfa;">🛡️ Shield</span>
+                </h3>
+             </div>
+
+             <!-- Chat / Timeline History -->
+             <div id="unified-chat-history" style="flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                <div class="chat-message system" style="align-self: flex-start; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); padding: 0.75rem; border-radius: 8px; max-width: 85%; line-height: 1.4; font-size: 0.9em;">
+                  <strong>Hello! I'm Pavi.</strong><br>
+                  I can write code, build projects, explain concepts, and answer your questions.<br>
+                  Type your instructions below. Use <strong>Build</strong> to execute actions or <strong>Chat</strong> to talk to me.
+                </div>
+                <!-- Timeline items and chat messages go here -->
+             </div>
+
+             <!-- Mermaid live graph container (hidden by default) -->
+             <div id="mermaid-container" class="mermaid-container" style="display:none; border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border);">
+               <div class="mermaid-header">
+                 <span class="mermaid-title">🗺️ Dependency Graph</span>
+                 <div class="mermaid-skeleton" id="mermaid-skeleton">Building graph<span class="dot-anim">...</span></div>
+               </div>
+               <div id="mermaid-output" class="mermaid-output"></div>
+             </div>
+
+             <!-- Raw Terminal Logs Toggle -->
+             <div style="padding: 0.5rem 1.5rem; border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); display: flex; justify-content: space-between; align-items: center;">
+                <label style="cursor: pointer; font-size: 0.85em; color: var(--text-secondary); display: flex; align-items: center; gap: 5px;">
+                  <input type="checkbox" id="toggle-raw-logs" style="accent-color: var(--accent-primary);" onchange="document.getElementById('raw-terminal-container').style.display = this.checked ? 'block' : 'none';"> Show Raw Logs
+                </label>
+             </div>
+             
+             <!-- Raw terminal output -->
+             <div id="raw-terminal-container" class="cli-terminal" style="display: none; border-top: 1px solid rgba(255,255,255,0.1); padding: 1rem; max-height: 150px; overflow-y: auto;">
+               <code id="magic-cli-output" style="color: #a78bfa; white-space: pre-wrap; font-family: monospace;"></code>
+             </div>
+
+             <!-- Input Area -->
+             <div style="padding: 1rem; border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.3);">
+                <form id="unified-action-form" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                     <button type="button" id="clarify-prompt-btn" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8em; border-radius: 6px; display: flex; align-items: center; gap: 5px;">✨ Clarify Idea</button>
+                  </div>
+                  <div style="display: flex; gap: 0.75rem; align-items: flex-end;">
+                     <textarea id="unified-prompt" rows="2" placeholder="e.g. Build me a sleek dark-mode coffee shop landing page... or How does this code work?" style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0, 0, 0, 0.2); color: var(--text-primary); font-family: var(--font-sans); font-size: 0.95rem; outline: none; resize: vertical;"></textarea>
+                     <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                       <button type="button" class="btn btn-primary" id="unified-build-btn" style="padding: 0.6rem 1.2rem; border-radius: 6px; white-space: nowrap; font-weight: bold; min-width: 100px;">Build ✨</button>
+                       <button type="button" class="btn btn-secondary" id="unified-chat-btn" style="padding: 0.6rem 1.2rem; border-radius: 6px; white-space: nowrap; min-width: 100px;">Chat 💬</button>
+                       <button type="button" class="btn btn-danger" id="unified-cancel-btn" style="padding: 0.6rem 1.2rem; border-radius: 6px; white-space: nowrap; min-width: 100px; display: none;">Cancel 🛑</button>
+                     </div>
+                  </div>
+                </form>
+             </div>
+
+          </div>
+        </section>
+
+        <!-- Write Audit Panel -->
+        <section id="pending-panel" class="panel">
+          <div class="cards-grid" style="grid-template-columns: 300px 1fr; gap: 1.5rem; height: calc(100vh - 200px); align-items: stretch;">
+            <!-- Left Column: Pending List -->
+            <div class="card glass-card" style="display: flex; flex-direction: column; padding: 1rem; height: 100%; overflow: hidden;">
+              <h3 style="margin-top: 0; font-size: 1.1rem; display: flex; align-items: center; justify-content: space-between;">
+                Pending Writes
+                <span id="pending-writes-count-badge" style="background: rgba(99,102,241,0.2); color: #a78bfa; font-size: 0.75rem; padding: 2px 8px; border-radius: 12px;">0</span>
+              </h3>
+              <p style="font-size: 0.78rem; opacity: 0.8; margin-bottom: 0.5rem;">
+                Intercepted writes waiting for review.
+              </p>
+              <div id="pending-bulk-actions" style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem; display: none;">
+                <button id="btn-approve-all" class="btn btn-primary" style="flex: 1; background: #10b981; border-color: #10b981; padding: 0.3rem; font-size: 0.8rem; margin-top: 0;">Approve All</button>
+                <button id="btn-reject-all" class="btn btn-danger" style="flex: 1; background: #ef4444; border-color: #ef4444; padding: 0.3rem; font-size: 0.8rem; margin-top: 0;">Reject All</button>
+              </div>
+              <div id="pending-changes-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 4px;">
+                <div style="text-align: center; opacity: 0.5; padding: 2rem;">
+                  <div style="font-size: 1.5rem;">📝</div>
+                  <p style="font-size: 0.85rem;">No pending writes.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Diff View -->
+            <div class="card glass-card" id="diff-viewer-card" style="display: none; flex-direction: column; padding: 1rem; height: 100%; overflow: hidden;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.75rem; margin-bottom: 0.75rem;">
+                <div>
+                  <h3 id="diff-file-name" style="margin: 0; font-size: 1.1rem;">file.txt</h3>
+                  <div id="diff-file-path" style="font-size: 0.75rem; opacity: 0.7; word-break: break-all; margin-top: 2px;">/workspace/file.txt</div>
+                  <div id="diff-swarm-id" style="font-size: 0.75rem; opacity: 0.7; margin-top: 2px;">Run: run_123</div>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                  <button id="btn-approve-write" class="btn btn-primary" style="background: #10b981; border-color: #10b981; padding: 0.5rem 1rem; margin-top: 0;">Approve & Write</button>
+                  <button id="btn-reject-write" class="btn btn-danger" style="background: #ef4444; border-color: #ef4444; padding: 0.5rem 1rem; margin-top: 0;">Reject & Discard</button>
+                </div>
+              </div>
+              <div id="monaco-diff-container" style="flex: 1; min-height: 300px; border-radius: 8px; overflow: hidden; border: 1px solid var(--glass-border); background: #1e1e1e;"></div>
+            </div>
+            
+            <!-- Empty state for Right Column when nothing is selected -->
+            <div class="card glass-card" id="diff-empty-card" style="display: flex; align-items: center; justify-content: center; text-align: center; height: 100%;">
+              <div style="opacity: 0.5; padding: 2rem;">
+                <div style="font-size: 3rem;">🔍</div>
+                <h3>Select a File</h3>
+                <p>Select a pending file from the list to view the changes and approve/reject them.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Mobile Connect Panel -->
+        <section id="mobile-panel" class="panel">
+          <div class="cards-grid">
+            <div class="card glass-card full-width" style="text-align: center;">
+              <h3>Connect Your Phone</h3>
+              <p>Scan this QR code or use the link below to access Pavi from your mobile device on this network.</p>
+              
+              <div id="qrcode-container" style="display: flex; justify-content: center; padding: 2rem; background: white; width: fit-content; margin: 0 auto; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+                <!-- QR Code will be injected here -->
+              </div>
+
+              <div style="margin-top: 2rem;">
+                <label style="color: var(--text-secondary); font-size: 0.9em; display: block; margin-bottom: 0.5rem;">Access Link:</label>
+                <div style="display: flex; gap: 10px; max-width: 500px; margin: 0 auto;">
+                  <input type="text" id="mobile-access-link" readonly value="Detecting IP..." style="text-align: center; font-family: monospace;">
+                  <button type="button" class="btn btn-secondary" id="copy-mobile-link-btn" style="white-space: nowrap; margin-top:0;">📋 Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Swarm History Panel -->
+        <section id="history-panel" class="panel">
+          <div class="cards-grid" style="grid-template-columns: 350px 1fr; gap: 1.5rem; height: calc(100vh - 200px); align-items: stretch;">
+            <!-- Left Column: History List -->
+            <div class="card glass-card" style="display: flex; flex-direction: column; padding: 1rem; height: 100%; overflow: hidden;">
+              <h3 style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+                <span><i class="icon">📜</i> Past Runs</span>
+                <button id="btn-refresh-history" class="btn btn-secondary" style="padding: 0.3rem 0.5rem; font-size: 0.8rem;">Refresh</button>
+              </h3>
+              <div id="history-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;">
+                <div style="color: var(--text-secondary); text-align: center; padding: 2rem;">No history found.</div>
+              </div>
+            </div>
+
+            <!-- Right Column: Run Details -->
+            <div class="card glass-card" style="display: flex; flex-direction: column; padding: 1rem; height: 100%; overflow: hidden;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3>Run Details</h3>
+                <div id="history-actions" style="display: none; gap: 0.5rem;">
+                  <button id="btn-replay-run" class="btn btn-primary" style="padding: 0.4rem 1rem;">▶ Replay</button>
+                  <button id="btn-delete-run" class="btn btn-danger" style="padding: 0.4rem 1rem;">🗑 Delete</button>
+                </div>
+              </div>
+              <div id="history-detail-view" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 1rem; border: 1px solid var(--glass-border);">
+                <div style="color: var(--text-secondary); text-align: center; padding: 2rem;">Select a run to view details.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Cloud Sync Panel -->
+        <section id="sync-panel" class="panel">
+          <!-- ── Pavi Evolution: Rate Status Widget ───────────────────── -->
+          <div class="cards-grid" style="margin-bottom: 1.5rem;">
+            <div class="card glass-card" style="border: 1px solid rgba(99,102,241,0.3);">
+              <div id="rate-status-widget" style="min-height:60px;color:var(--text-secondary);font-size:0.85em;">
+                <div style="color:#6366f1;font-size:0.8em;margin-bottom:6px">🔑 API Key Health</div>
+                <div style="color:#64748b;font-size:0.78em">Loading key status...</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cards-grid">
+            <div class="card glass-card">
+              <h3>Portable Snapshot</h3>
+              <p>Transfer your agent's brain between PCs.</p>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">
+                <button type="button" class="btn btn-primary" id="export-snapshot-btn">🎁 Export (.zip)</button>
+                <div style="border-top: 1px solid var(--glass-border); padding-top: 0.5rem; margin-top: 0.5rem;">
+                  <label style="font-size: 0.85em; color: var(--text-secondary);">Import from another PC:</label>
+                  <input type="file" id="import-snapshot-input" accept=".zip" style="display:none;">
+                  <button type="button" class="btn btn-secondary" id="import-snapshot-btn" style="width: 100%; margin-top: 0.2rem;">📂 Import Snapshot</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card glass-card">
+              <h3>AgentDB Sync (QUIC)</h3>
+              <p>Sync your agent's brain in real-time between multiple PCs on the same network.</p>
+              <div class="form-group">
+                <label>Sync Mode</label>
+                <select id="sync-mode">
+                  <option value="off">Off (Local Only)</option>
+                  <option value="server">Start Sync Server (Host)</option>
+                  <option value="client">Connect to Server (Client)</option>
+                </select>
+              </div>
+              <div id="sync-settings" style="display:none; margin-top: 1rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+                <div class="form-group" id="sync-port-group">
+                  <label>Port</label>
+                  <input type="number" id="sync-port" value="4433">
+                </div>
+                <div class="form-group" id="sync-host-group" style="display:none;">
+                  <label>Host IP</label>
+                  <input type="text" id="sync-host" placeholder="192.168.1.xxx">
+                </div>
+                <div class="form-group">
+                  <label>Auth Token</label>
+                  <input type="text" id="sync-token" placeholder="secret123">
+                </div>
+                <button type="button" class="btn btn-secondary" id="apply-sync-btn" style="width: 100%;">⚡ Apply Sync Settings</button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="cli-output-container glass-card" style="margin-top: 2rem;">
+            <div class="cli-header"><h3>Sync Status</h3></div>
+            <div id="sync-status-log" style="padding: 1rem; font-family: monospace; color: #a78bfa;">Status: Local Mode Only</div>
+          </div>
+        </section>
+
+        <!-- Swarm Panel -->
+        <section id="swarm-panel" class="panel">
+          <div class="cards-grid">
+            <div class="card glass-card">
+              <h3>Initialize Swarm</h3>
+              <p>Configure and launch a new multi-agent swarm.</p>
+              <form id="swarm-init-form" class="action-form">
+                <div class="form-group">
+                  <label for="topology">Topology</label>
+                  <select id="topology" name="topology">
+                    <option value="hierarchical">Hierarchical</option>
+                    <option value="mesh">Mesh</option>
+                    <option value="ring">Ring</option>
+                    <option value="star">Star</option>
+                    <option value="adaptive">Adaptive</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="max-agents">Max Agents</label>
+                  <input type="number" id="max-agents" name="max-agents" min="1" max="50" value="8">
+                </div>
+                <button type="button" class="btn btn-primary execute-cmd-btn" data-type="swarm-init">Execute Command</button>
+              </form>
+            </div>
+
+            <div class="card glass-card">
+              <h3>Start Swarm</h3>
+              <p>Start swarm execution with a specific objective.</p>
+              <form id="swarm-start-form" class="action-form">
+                <div class="form-group">
+                  <label for="objective">Objective</label>
+                  <input type="text" id="objective" name="objective" placeholder="e.g. Build API">
+                </div>group">
+                  <label for="strategy">Strategy</label>
+                  <select id="strategy" name="strategy">
+                    <option value="development">Development</option>
+                    <option value="research">Research</option>
+                    <option value="specialized">Specialized</option>
+                  </select>
+                </div>
+                <button type="button" class="btn btn-primary execute-cmd-btn" data-type="swarm-start">Execute Command</button>
+              </form>
+            </div>
+            
+            <div class="card glass-card">
+              <h3>Spawn Agent</h3>
+              <p>Add a new agent to the swarm.</p>
+              <form id="agent-spawn-form" class="action-form">
+                <div class="form-group">
+                  <label for="agent-type">Agent Type</label>
+                  <select id="agent-type" name="agent-type">
+                    <option value="coordinator">Coordinator</option>
+                    <option value="coder">Coder</option>
+                    <option value="tester">Tester</option>
+                    <option value="reviewer">Reviewer</option>
+                    <option value="architect">Architect</option>
+                    <option value="researcher">Researcher</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="agent-name">Agent Name</label>
+                  <input type="text" id="agent-name" name="agent-name" placeholder="e.g. worker-1">
+                </div>
+                <button type="button" class="btn btn-primary execute-cmd-btn" data-type="agent-spawn">Execute Command</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- Memory Panel -->
+        <section id="memory-panel" class="panel">
+          <div class="cards-grid">
+            <div class="card glass-card">
+              <h3>Search Memory</h3>
+              <p>Find patterns and previous interactions.</p>
+              <form id="memory-search-form" class="action-form">
+                <div class="form-group">
+                  <label for="search-query">Query</label>
+                  <input type="text" id="search-query" name="search-query" placeholder="e.g. react hooks">
+                </div>
+                <div class="form-group">
+                  <label for="search-namespace">Namespace</label>
+                  <input type="text" id="search-namespace" name="search-namespace" value="patterns">
+                </div>
+                <button type="button" class="btn btn-primary execute-cmd-btn" data-type="memory-search">Execute Command</button>
+              </form>
+            </div>
+
+            <div class="card glass-card">
+              <h3>Store Memory</h3>
+              <p>Save a new pattern or result.</p>
+              <form id="memory-store-form" class="action-form">
+                <div class="form-group">
+                  <label for="store-key">Key</label>
+                  <input type="text" id="store-key" name="store-key" placeholder="e.g. auth-pattern">
+                </div>
+                <div class="form-group">
+                  <label for="store-value">Value</label>
+                  <input type="text" id="store-value" name="store-value" placeholder="e.g. jwt implementation">
+                </div>
+                <div class="form-group">
+                  <label for="store-namespace">Namespace</label>
+                  <input type="text" id="store-namespace" name="store-namespace" value="patterns">
+                </div>
+                <button type="button" class="btn btn-primary execute-cmd-btn" data-type="memory-store">Execute Command</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- Skills Panel (Hidden as it is visual only and confusing) -->
+        <section id="skills-panel" class="panel" style="display: none;">
+          <div class="cards-grid">
+             <div class="card glass-card full-width">
+                <h3>Skills Overview</h3>
+                <p>Invoke skills directly using the `$skill-name` format in your workflow.</p>
+                <div class="skills-list" id="dynamic-skills-list">
+                    <!-- Skills will be injected here dynamically by app.js -->
+                    <div class="skill-tag" style="opacity:0.5;">Loading skills...</div>
+                </div>
+             </div>
+          </div>
+        </section>
+
+        <!-- Bot Roles Panel -->
+        <section id="bot-roles-panel" class="panel">
+          <div class="cards-grid">
+            <div class="card glass-card full-width">
+              <h3>🤖 Bot Roles Registry</h3>
+              <p style="margin-bottom:1rem; opacity:0.8;">
+                Add specialized bots by scanning a GitHub repo of <code>.bot.json</code> definitions.
+                Active bots are automatically included in Swarm tasks.
+                Bots of the same role will self-upgrade when a newer version is detected.
+              </p>
+
+              <!-- Bot Pack Ingest -->
+              <div class="panel-section" style="margin-bottom:1.5rem;">
+                <label for="bot-pack-url" style="display:block; margin-bottom:.4rem; font-weight:600;">
+                  📦 Add Bot Pack from GitHub
+                </label>
+                <div style="display:flex; gap:.6rem;">
+                  <input type="text" id="bot-pack-url" placeholder="https://github.com/user/my-bot-pack"
+                         style="flex:1; padding:.6rem; border-radius:8px; border:1px solid var(--glass-border); background:var(--input-bg); color:var(--text-primary);">
+                  <button id="bot-ingest-btn" class="btn btn-primary" style="white-space:nowrap; padding:.6rem 1rem;">
+                    ⬇️ Import Bots
+                  </button>
+                </div>
+                <div style="display:flex; gap:.6rem; margin-top:.6rem; align-items:center;">
+                  <button id="scan-skills-btn" class="btn" style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.4); color:#34d399; padding:.5rem 1rem; border-radius:8px; cursor:pointer; font-size:.85rem; white-space:nowrap;">
+                    🔍 Scan Local Skills (134 found)
+                  </button>
+                  <span style="font-size:.78rem; opacity:.6;">Auto-registers all <code>.agents/skills/</code> SKILL.md files</span>
+                </div>
+                <div id="bot-ingest-status" style="margin-top:.6rem; font-size:.8rem; opacity:.7;"></div>
+              </div>
+
+              <!-- Bot Cards Grid -->
+              <div id="bot-roles-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:1rem;">
+                <div id="bot-roles-empty" style="grid-column:1/-1; text-align:center; opacity:0.5; padding:2rem;">
+                  <div style="font-size:2rem;">🤖</div>
+                  <p>No bots registered yet.<br>Import a bot pack above or use the default Swarm agents.</p>
+                </div>
+              </div>
+
+              <!-- Bot Schema Reference -->
+              <details style="margin-top:1.5rem; opacity:0.7;">
+                <summary style="cursor:pointer; font-size:.85rem;">📋 Bot Pack Format (how to create your own)</summary>
+                <pre style="background:rgba(0,0,0,.3); padding:1rem; border-radius:8px; font-size:.78rem; margin-top:.6rem; overflow:auto;">{
+  "name": "py-coder",
+  "role": "coder",
+  "language": "python",
+  "description": "Expert Python developer bot",
+  "version": "1.2.0",
+  "systemPrompt": "You are an expert Python developer...",
+  "entry": "run.py"
+}</pre>
+                <p style="font-size:.8rem; margin-top:.4rem;">
+                  Create a GitHub repo with <code>*.bot.json</code> files, one per bot. Then paste the repo URL above.
+                </p>
+              </details>
+            </div>
+          </div>
+        </section>
+
+        <!-- Harvester Panel -->
+        <section id="harvester-panel" class="panel">
+          <div class="cards-grid">
+            <div class="card glass-card full-width">
+              <h3>Knowledge Harvester</h3>
+              <p>Automatically interrogate external APIs and store the extracted patterns into your local offline memory database.</p>
+              <form id="harvester-form" class="action-form">
+                <div class="panel-section">
+                  <div class="form-group">
+                    <label for="harvest-topic">Seed Topic</label>
+                    <input type="text" id="harvest-topic" name="harvest-topic" placeholder="e.g. Advanced React Performance Patterns">
+                  </div>
+                  <div class="form-group">
+                    <label for="harvest-loops">Max Questions / Loops</label>
+                    <input type="number" id="harvest-loops" name="harvest-loops" min="1" max="50" value="3">
+                  </div>
+                </div>
+                <button type="button" class="btn btn-primary execute-cmd-btn" id="start-harvest-btn" style="margin-top: 1.5rem; width: 100%;">Start Brain Drain</button>
+              </form>
+            </div>
+          </div>
+          
+          <div class="cli-output-container glass-card" id="harvest-status-container" style="display: none; margin-top: 1.5rem;">
+             <div class="cli-header">
+               <h3>Harvester Live Log <span id="harvest-loading-spinner" style="font-size: 0.8em; margin-left: 10px; color: var(--accent-primary);">⏳ Draining...</span></h3>
+             </div>
+             <div class="cli-terminal">
+               <code id="harvest-cli-output" style="color: #60a5fa;"></code>
+             </div>
+          </div>
+        </section>
+
+        <!-- Zip Ingester Panel -->
+        <section id="zip-ingester-panel" class="panel">
+          <div class="cards-grid">
+            <div class="card glass-card full-width">
+              <h3>Brain Dump (Zip Ingester)</h3>
+              <p>Feed Pavi an entire zipped project (like Embedded C code). Pavi will unzip it, read all the logic, verify it, and save the concepts to offline memory.</p>
+              <form id="zip-ingest-form" class="action-form">
+                <div class="form-group" style="text-align: left;">
+                  <label for="zip-file-path">1. Select or Drop Zip File</label>
+                  <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div id="zip-drop-zone" style="border: 2px dashed var(--glass-border); border-radius: 8px; padding: 2rem; text-align: center; background: rgba(0,0,0,0.2); cursor: pointer; transition: all 0.2s;">
+                      <p style="margin: 0; color: var(--text-secondary);">Drag & Drop your .zip file here or click to upload</p>
+                      <input type="file" id="zip-file-input" accept=".zip" style="display: none;">
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                      <input type="text" id="zip-file-path" placeholder="Path will appear here or e.g. C:/Projects/MySensor.zip" style="flex: 1; padding: 1rem; font-size: 1.1rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0, 0, 0, 0.2); color: var(--text-primary);">
+                      <button type="button" class="btn btn-secondary" id="browse-zip-btn" style="padding: 0 1.5rem; border-radius: 8px;">PS Browse...</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group" style="text-align: left; margin-top: 1rem;">
+                  <label for="zip-topic-hint">2. Topic Hint (Optional)</label>
+                  <input type="text" id="zip-topic-hint" placeholder="e.g. Embedded C temperature sensor logic" style="padding: 1rem; font-size: 1.1rem; width: 100%; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0, 0, 0, 0.2); color: var(--text-primary);">
+                </div>
+                <button type="button" class="btn btn-primary" id="start-zip-ingest-btn" style="margin-top: 1.5rem; width: 100%;">🧠 Start Knowledge Ingestion</button>
+              </form>
+            </div>
+          </div>
+          
+          <div class="cli-output-container glass-card" id="zip-status-container" style="display: none; margin-top: 2rem;">
+             <div class="cli-header">
+               <h3>Neural Analysis <span id="zip-loading-spinner" style="font-size: 0.8em; margin-left: 10px; color: var(--accent-primary);">⏳ Scanning...</span></h3>
+             </div>
+             <div class="cli-terminal">
+               <code id="zip-cli-output" style="color: #10b981; white-space: pre-wrap;"></code>
+             </div>
+          </div>
+        </section>
+
+
+
+        <!-- Model Config Panel -->
+        <section id="model-config-panel" class="panel">
+          <div class="cards-grid">
+            <div class="card glass-card full-width">
+              <h3>Maker & Checker Engine</h3>
+              <p>Configure the Dual-Model pipeline. The Worker does the heavy lifting, the Reviewer verifies and ensures quality.</p>
+              <div class="card glass-card">
+              <h3>👷 Maker Model (Heavy Lifter)</h3>
+              <p style="margin-bottom: 1rem; color: #aaa;">This AI writes the code. You can paste multiple keys (one per line) to auto-bypass rate limits!</p>
+              <form id="worker-config-form" class="action-form">
+                <div class="form-group">
+                  <label for="worker-provider">AI Provider</label>
+                  <select id="worker-provider" class="glass-input" style="padding: 0.8rem; width: 100%; border-radius: 8px; background: rgba(0,0,0,0.2); color: white; border: 1px solid var(--glass-border);">
+                    <option value="http://localhost:11434/v1/chat/completions|phi3:mini">Local Bot (Ollama - Free)</option>
+                    <option value="https://api.groq.com/openai/v1/chat/completions|llama-3.3-70b-versatile">Groq (Fast, Free)</option>
+                    <option value="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions|gemini-2.5-flash">Gemini (Fast, Free)</option>
+                    <option value="https://api.openai.com/v1/chat/completions|gpt-4o-mini">OpenAI (Smart, Paid)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="worker-key">API Keys (One per line)</label>
+                  <textarea id="worker-key" class="glass-input" placeholder="gsk_...\ngsk_...\ngsk_..." rows="4" style="padding: 0.8rem; width: 100%; border-radius: 8px;"></textarea>
+                </div>
+                <div class="form-group" style="margin-top: 1rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 1rem;">
+                  <label for="worker-custom-url">Custom Offline Ollama Endpoint</label>
+                  <div style="display: flex; gap: 0.5rem; margin-top: 0.3rem;">
+                    <input type="text" id="worker-custom-url" class="glass-input" placeholder="http://localhost:11434" value="http://localhost:11434" style="flex: 1; padding: 0.8rem; border-radius: 8px;">
+                    <button type="button" id="discover-models-btn" class="glass-button" style="padding: 0.8rem 1.2rem; border-radius: 8px; font-weight: bold; background: var(--secondary-glow); border: none; cursor: pointer; color: white;">Discover Models</button>
+                  </div>
+                  <span style="font-size: 0.85rem; color: #888; margin-top: 0.3rem; display: block;">Enter Ollama host and click discover to load local models.</span>
+                </div>
+              </form>
+            </div>
+            
+            <div class="card glass-card">
+              <h3>🕵️ Checker Model (Strict Reviewer)</h3>
+              <p style="margin-bottom: 1rem; color: #aaa;">This AI verifies the Maker's logic and confirms it is correct.</p>
+              <form id="reviewer-config-form" class="action-form">
+                <div class="form-group">
+                  <label for="reviewer-provider">AI Provider</label>
+                  <select id="reviewer-provider" class="glass-input" style="padding: 0.8rem; width: 100%; border-radius: 8px; background: rgba(0,0,0,0.2); color: white; border: 1px solid var(--glass-border);">
+                    <option value="http://localhost:11434/v1/chat/completions|phi3:mini">Local Bot (Ollama - Free)</option>
+                    <option value="https://api.groq.com/openai/v1/chat/completions|llama-3.3-70b-versatile">Groq (Fast, Free)</option>
+                    <option value="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions|gemini-2.5-flash">Gemini (Fast, Free)</option>
+                    <option value="https://api.openai.com/v1/chat/completions|gpt-4o-mini">OpenAI (Smart, Paid)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="reviewer-key">API Keys (One per line)</label>
+                  <textarea id="reviewer-key" class="glass-input" placeholder="gsk_...\ngsk_..." rows="4" style="padding: 0.8rem; width: 100%; border-radius: 8px;"></textarea>
+                </div>
+              </form>
+            </div>
+            
+            <div class="card glass-card full-width" style="grid-column: 1 / -1; margin-top: 1rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin: 0;">⚡ LLM Prompt Caching</h3>
+                <button type="button" class="btn btn-secondary" id="refresh-cache-stats-btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh Stats</button>
+              </div>
+              <p style="margin-bottom: 1rem; color: #aaa;">Caching duplicate prompts reduces latency and API costs. Active across Worker, Proxy, and Swarm roles.</p>
+              
+              <div style="display: flex; gap: 1rem; align-items: center; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid var(--glass-border);">
+                <div style="flex: 1; text-align: center; border-right: 1px solid var(--glass-border);">
+                  <div style="font-size: 2rem; font-weight: bold; color: var(--accent-primary);" id="cache-stat-count">0</div>
+                  <div style="font-size: 0.8rem; color: var(--text-secondary);">Cached Prompts</div>
+                </div>
+                <div style="flex: 1; text-align: center;">
+                  <div style="font-size: 2rem; font-weight: bold; color: #10b981;" id="cache-stat-hits">0</div>
+                  <div style="font-size: 0.8rem; color: var(--text-secondary);">Total Cache Hits</div>
+                </div>
+              </div>
+              
+              <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
+                <button type="button" class="btn btn-danger" id="clear-cache-btn" style="padding: 0.5rem 1rem;">🗑 Clear Cache</button>
+              </div>
+            </div>
+
+            <div class="card glass-card full-width" style="grid-column: 1 / -1; margin-top: 1rem;">
+              <h3>🌱 Offline Model Growth Engine</h3>
+              <p style="margin-bottom: 1rem; color: #aaa;">Compile rejected-then-corrected worker trajectories into high-quality training pairs. Promoted corrections are harvested for DPO (Direct Preference Optimization) fine-tuning.</p>
+              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid var(--glass-border);">
+                <div>
+                  <span style="font-weight: bold; color: var(--accent-primary);">Rejection logs & verified critiques</span>
+                  <div style="font-size: 0.85rem; color: #888; margin-top: 0.2rem;">Saved to `notebook_llm_exports/rejections/`</div>
+                </div>
+                <button type="button" class="btn btn-secondary" id="export-dpo-btn" style="padding: 0.6rem 1.2rem; font-weight: bold;">Export DPO/RLHF Dataset</button>
+              </div>
+              <div id="dpo-export-toast" style="display: none; color: #10b981; margin-top: 10px; font-weight: bold;"></div>
+            </div>
+            
+            <div id="save-toast" style="display: none; color: #10b981; margin-top: 10px; width: 100%;">Configuration Saved! Dashboard will now use Maker & Checker pipeline.</div>
+            <button type="button" class="btn btn-primary" id="save-config-btn" style="margin-top: 1.5rem; width: 100%; grid-column: 1 / -1;">Save Configuration</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Supreme Architect Panel -->
+        <section id="architect-panel" class="panel">
+          <!-- Top Row: Diagnostics Status Indicators -->
+          <div class="cards-grid" style="margin-bottom: 1.5rem;">
+            <div class="card glass-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <h3 style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                  👑 System Diagnostics
+                </h3>
+                <button type="button" id="refresh-diagnostics-btn" class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem; border-radius: 6px; margin: 0;">
+                  🔄 Refresh
+                </button>
+              </div>
+              <div class="diagnostics-grid" style="display: grid; grid-template-columns: 1fr; gap: 0.75rem; margin-top: 1rem;">
+                
+                <!-- Database Sync -->
+                <div class="diagnostic-item glass-panel" style="padding: 0.75rem; border-radius: 8px; background: rgba(255, 255, 255, 0.03); display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <div style="font-weight: 600; font-size: 0.9rem;">SQLite Database Sync</div>
+                    <div style="font-size: 0.75rem; opacity: 0.7;" id="diag-db-details">Auditing flat vs active SQLite files...</div>
+                  </div>
+                  <span class="badge" id="diag-db-badge" style="background: rgba(255,255,255,0.1); color: var(--text-secondary); font-size: 0.75rem; padding: 2px 8px; border-radius: 12px;">Checking...</span>
+                </div>
+
+                <!-- Config Health -->
+                <div class="diagnostic-item glass-panel" style="padding: 0.75rem; border-radius: 8px; background: rgba(255, 255, 255, 0.03); display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <div style="font-weight: 600; font-size: 0.9rem;">Config Integrity</div>
+                    <div style="font-size: 0.75rem; opacity: 0.7;" id="diag-config-details">Verifying config.json structure...</div>
+                  </div>
+                  <span class="badge" id="diag-config-badge" style="background: rgba(255,255,255,0.1); color: var(--text-secondary); font-size: 0.75rem; padding: 2px 8px; border-radius: 12px;">Checking...</span>
+                </div>
+
+                <!-- Ollama Provider status -->
+                <div class="diagnostic-item glass-panel" style="padding: 0.75rem; border-radius: 8px; background: rgba(255, 255, 255, 0.03); display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <div style="font-weight: 600; font-size: 0.9rem;">Local Ollama Model Connection</div>
+                    <div style="font-size: 0.75rem; opacity: 0.7;" id="diag-ollama-details">Pinging Ollama tags (phi3:mini fallback)...</div>
+                  </div>
+                  <span class="badge" id="diag-ollama-badge" style="background: rgba(255,255,255,0.1); color: var(--text-secondary); font-size: 0.75rem; padding: 2px 8px; border-radius: 12px;">Checking...</span>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Daily Briefing Summary Banner -->
+          <div class="card glass-card full-width" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(168, 85, 247, 0.05)); border: 1px solid rgba(139, 92, 246, 0.15);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3 style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                📋 Daily Intelligence Briefing
+              </h3>
+              <span class="badge" id="briefing-date-badge" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa; font-size: 0.72rem; padding: 3px 10px; border-radius: 12px; font-family: monospace;">No briefing yet</span>
+            </div>
+            <div id="briefing-stats" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem;">
+              <div style="text-align: center; padding: 0.75rem; border-radius: 10px; background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.12);">
+                <div style="font-size: 1.8rem; font-weight: 800; color: #10b981;" id="briefing-learned">—</div>
+                <div style="font-size: 0.72rem; opacity: 0.6; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Learned</div>
+              </div>
+              <div style="text-align: center; padding: 0.75rem; border-radius: 10px; background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.12);">
+                <div style="font-size: 1.8rem; font-weight: 800; color: #ef4444;" id="briefing-rejected">—</div>
+                <div style="font-size: 0.72rem; opacity: 0.6; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Rejected</div>
+              </div>
+              <div style="text-align: center; padding: 0.75rem; border-radius: 10px; background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.12);">
+                <div style="font-size: 1.8rem; font-weight: 800; color: #f59e0b;" id="briefing-escalated">—</div>
+                <div style="font-size: 0.72rem; opacity: 0.6; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Escalated</div>
+              </div>
+              <div style="text-align: center; padding: 0.75rem; border-radius: 10px; background: rgba(59, 130, 246, 0.06); border: 1px solid rgba(59, 130, 246, 0.12);">
+                <div style="font-size: 1.8rem; font-weight: 800; color: #3b82f6;" id="briefing-upgrades">—</div>
+                <div style="font-size: 0.72rem; opacity: 0.6; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Upgrades</div>
+              </div>
+              <div style="text-align: center; padding: 0.75rem; border-radius: 10px; background: rgba(168, 85, 247, 0.06); border: 1px solid rgba(168, 85, 247, 0.12);">
+                <div style="font-size: 1.8rem; font-weight: 800; color: #a855f7;" id="briefing-gaps">—</div>
+                <div style="font-size: 0.72rem; opacity: 0.6; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Open Gaps</div>
+              </div>
+            </div>
+            <div id="briefing-empty" style="text-align: center; opacity: 0.5; padding: 1rem; display: none;">
+              <div style="font-size: 1.5rem;">🌙</div>
+              <p style="font-size: 0.82rem;">No briefings generated yet. The first briefing will appear after midnight UTC.</p>
+            </div>
+          </div>
+
+          <!-- Self-Model: Capabilities + Decisions + Escalations -->
+          <div class="cards-grid" style="grid-template-columns: 2fr 2fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+
+            <!-- Known Capabilities -->
+            <div class="card glass-card" style="display: flex; flex-direction: column; min-height: 350px;">
+              <h3 style="margin-top: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                🧠 Known Capabilities
+              </h3>
+              <p style="font-size: 0.82rem; opacity: 0.8; margin-bottom: 0.75rem;">
+                Full self-model snapshot — what Pavi currently knows.
+              </p>
+              <div id="capabilities-list" style="flex: 1; overflow-y: auto; max-height: 400px; padding-right: 0.25rem;">
+                <div style="text-align: center; opacity: 0.5; padding: 2rem;">
+                  <div style="font-size: 2rem;">🌾</div>
+                  <p>Loading capabilities...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Decisions -->
+            <div class="card glass-card" style="display: flex; flex-direction: column; min-height: 350px;">
+              <h3 style="margin-top: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                ⚖️ Recent Decisions
+              </h3>
+              <p style="font-size: 0.82rem; opacity: 0.8; margin-bottom: 0.75rem;">
+                Last 20 APPROVE / REJECT / DISCOVER / ESCALATE verdicts.
+              </p>
+              <div id="decisions-list" style="flex: 1; overflow-y: auto; max-height: 400px; padding-right: 0.25rem;">
+                <div style="text-align: center; opacity: 0.5; padding: 2rem;">
+                  <div style="font-size: 2rem;">⚖️</div>
+                  <p>Loading decisions...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pending Escalations -->
+            <div class="card glass-card" style="display: flex; flex-direction: column; min-height: 350px;">
+              <h3 style="margin-top: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                🚨 Escalations
+              </h3>
+              <p style="font-size: 0.82rem; opacity: 0.8; margin-bottom: 0.75rem;">
+                Items flagged for human review.
+              </p>
+              <div id="escalations-list" style="flex: 1; overflow-y: auto; max-height: 400px; padding-right: 0.25rem;">
+                <div style="text-align: center; opacity: 0.5; padding: 2rem;">
+                  <div style="font-size: 2rem;">✅</div>
+                  <p>No pending escalations.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bottom Columns: Staging vs Gaps -->
+          <div class="cards-grid" style="grid-template-columns: 3fr 2fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+            
+            <!-- Staged Capabilities list -->
+            <div class="card glass-card" style="display: flex; flex-direction: column; min-height: 400px;">
+              <h3 style="margin-top: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                ⚡ Staged Capability Promotion
+              </h3>
+              <p style="font-size: 0.82rem; opacity: 0.8; margin-bottom: 1rem;">
+                Autonomously extracted skills based on codebase analysis. Promote to make them live.
+              </p>
+              
+              <div id="staged-skills-list" style="flex: 1; display: flex; flex-direction: column; gap: 0.75rem; overflow-y: auto; max-height: 450px; padding-right: 0.25rem;">
+                <div style="text-align: center; opacity: 0.5; padding: 2rem;">
+                  <div style="font-size: 2rem;">🌾</div>
+                  <p>No skills currently in staging.<br>They will appear when capability gaps are analyzed.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Detected Gaps list -->
+            <div class="card glass-card" style="display: flex; flex-direction: column; min-height: 400px;">
+              <h3 style="margin-top: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                🔍 Uncovered Capability Gaps
+              </h3>
+              <p style="font-size: 0.82rem; opacity: 0.8; margin-bottom: 1rem;">
+                Capability gaps discovered during repo intake that are not yet covered.
+              </p>
+              
+              <div id="pending-gaps-list" style="flex: 1; display: flex; flex-direction: column; gap: 0.75rem; overflow-y: auto; max-height: 450px; padding-right: 0.25rem;">
+                <div style="text-align: center; opacity: 0.5; padding: 2rem;">
+                  <div style="font-size: 2rem;">✅</div>
+                  <p>All clear! No pending gaps.<br>Everything found in repository intake is covered.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Audit Trail Section -->
+          <div class="card glass-card full-width">
+            <h3 style="margin-top: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+              📜 Self-Modification Audit Trail
+            </h3>
+            <p style="font-size: 0.82rem; opacity: 0.8; margin-bottom: 1rem;">
+              Complete history of repository acceptances, gap detections, skill promotions, and bot upgrades.
+            </p>
+            <div class="cli-terminal" style="padding: 0; max-height: 300px; overflow-y: auto; border: 1px solid var(--glass-border); border-radius: 8px;">
+              <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 0.82rem; text-align: left;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: var(--text-secondary);">
+                    <th style="padding: 0.6rem 1rem;">Timestamp</th>
+                    <th style="padding: 0.6rem 1rem;">Event Type</th>
+                    <th style="padding: 0.6rem 1rem;">Tag/Subject</th>
+                    <th style="padding: 0.6rem 1rem;">Description</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-trail-rows">
+                  <tr>
+                    <td colspan="4" style="padding: 2rem; text-align: center; opacity: 0.5;">
+                      Loading audit logs...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Workspaces Panel -->
+        <section id="workspaces-panel" class="panel">
+          <div class="cards-grid" style="grid-template-columns: 2fr 3fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+            <!-- Register Workspace Card -->
+            <div class="card glass-card">
+              <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
+                📁 Register New Workspace
+              </h3>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+                Add an existing local repository or project folder to your workspace index.
+              </p>
+              
+              <form id="workspace-create-form" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                  <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Workspace Name</label>
+                  <input type="text" id="ws-name" required placeholder="e.g. My Awesome App" class="glass-input" style="padding: 0.65rem 0.85rem; border-radius: 8px;">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                  <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Root Folder Path</label>
+                  <input type="text" id="ws-path" required placeholder="e.g. C:/Users/name/projects/my-app" class="glass-input" style="padding: 0.65rem 0.85rem; border-radius: 8px;">
+                  <span style="font-size: 0.72rem; color: var(--text-secondary);">Must be an absolute path existing on local disk.</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                  <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Description</label>
+                  <textarea id="ws-desc" placeholder="e.g. Main project repo for the customer portal" class="glass-input" rows="3" style="padding: 0.65rem 0.85rem; border-radius: 8px; resize: vertical;"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding: 0.75rem; border-radius: 8px; font-weight: bold; margin-top: 0.5rem;">Register Workspace</button>
+              </form>
+            </div>
+
+            <!-- Workspace List Card -->
+            <div class="card glass-card">
+              <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px; justify-content: space-between;">
+                📋 Registered Workspaces
+                <button id="refresh-workspaces-btn" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; margin: 0;">Refreshed ↻</button>
+              </h3>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+                Select a project below to activate it. The active workspace acts as the root execution context for AI swarms.
+              </p>
+              
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid var(--glass-border); color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
+                      <th style="padding: 0.75rem 0.5rem;">Status</th>
+                      <th style="padding: 0.75rem 0.5rem;">Workspace</th>
+                      <th style="padding: 0.75rem 0.5rem;">Path</th>
+                      <th style="padding: 0.75rem 0.5rem; text-align: right;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="workspaces-list-tbody">
+                    <tr>
+                      <td colspan="4" style="padding: 2rem; text-align: center; opacity: 0.5;">
+                        Loading workspaces...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Plugins Panel -->
+        <section id="plugins-panel" class="panel">
+          <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem;">
+            
+            <!-- Column 1: Plugins Management & Stats -->
+            <div class="card glass-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">🧩 Plugins & Live Metrics</h3>
+                <button type="button" class="btn btn-secondary" id="refresh-plugins-btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button>
+              </div>
+              <p style="margin-bottom: 1.5rem; color: #aaa; font-size: 0.9rem;">
+                Enable/disable plugins and view real-time performance, latencies, and execution statistics.
+              </p>
+              
+              <div id="plugins-list" style="display: flex; flex-direction: column; gap: 1rem;">
+                <div style="text-align: center; opacity: 0.5; padding: 2rem;">
+                  Loading plugins...
+                </div>
+              </div>
+            </div>
+
+            <!-- Column 2: Plugin Interactive Sandbox (Quick Test) -->
+            <div class="card glass-card">
+              <h3 style="margin: 0 0 1rem 0; display: flex; align-items: center; gap: 10px;">⚡ Plugin Interactive Sandbox</h3>
+              <p style="margin-bottom: 1.5rem; color: #aaa; font-size: 0.9rem;">
+                Quick-test any active tool plugin directly by passing parameters and witnessing execution outputs.
+              </p>
+              
+              <form id="plugin-test-form" style="display: flex; flex-direction: column; gap: 1rem;">
+                <div>
+                  <label for="plugin-select" style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.5rem; color: var(--text-primary);">Select Plugin</label>
+                  <select id="plugin-select" style="width: 100%; padding: 0.75rem; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: var(--text-primary); font-size: 0.9rem;">
+                    <option value="">-- Choose an active plugin --</option>
+                  </select>
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <label for="plugin-test-args" style="font-size: 0.85rem; font-weight: bold; color: var(--text-primary);">Parameters (JSON object or Plaintext)</label>
+                    <span id="args-help-label" style="font-size: 0.75rem; color: var(--text-secondary); font-style: italic;">Provide valid params</span>
+                  </div>
+                  <textarea id="plugin-test-args" rows="5" placeholder='{\n  "q": "what is google antigravity?"\n}' style="width: 100%; padding: 0.75rem; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: var(--text-primary); font-family: monospace; font-size: 0.85rem; resize: vertical;"></textarea>
+                </div>
+
+                <button type="submit" id="run-plugin-test-btn" class="btn btn-primary" style="padding: 0.75rem; border-radius: 8px; font-weight: bold;">
+                  ⚡ Run Execution Sandbox
+                </button>
+              </form>
+
+              <!-- Live Outputs panel -->
+              <div id="plugin-test-output-panel" style="display: none; margin-top: 1.5rem;">
+                <div style="font-weight: bold; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--accent-primary);">📟 Sandbox Results</div>
+                <pre id="plugin-test-output-pre" style="padding: 1rem; border-radius: 8px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: #cbd5e1; font-family: monospace; font-size: 0.82rem; overflow-x: auto; max-height: 250px; margin: 0;"></pre>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Swarm History Panel -->
+        <section id="history-panel" class="panel">
+          <div class="card glass-card full-width" style="display:flex;flex-direction:column;height:calc(100vh - 200px);">
+            <!-- Header -->
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid var(--glass-border);background:rgba(0,0,0,0.15);flex-shrink:0;">
+              <h3 style="margin:0;display:flex;align-items:center;gap:10px;">
+                📜 Swarm Execution History
+                <span id="swarm-history-spinner" style="display:none;font-size:0.75em;color:var(--accent-primary);">⏳ Loading...</span>
+              </h3>
+              <button id="btn-refresh-history" class="btn btn-secondary" style="padding:0.35rem 0.8rem;font-size:0.85rem;border-radius:6px;display:flex;align-items:center;gap:6px;">
+                ↻ Refresh
+              </button>
+            </div>
+
+            <!-- Phase B Stats Summary -->
+            <div id="swarm-stats-bar" style="display:flex; gap:1rem; padding:1rem 1.25rem; border-bottom:1px solid var(--glass-border); background:rgba(0,0,0,0.1); flex-shrink:0;">
+              <div style="flex:1; background:rgba(255,255,255,0.02); border:1px solid var(--glass-border); border-radius:8px; padding:0.75rem; text-align:center;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:0.25rem;">Average Quality</div>
+                <div id="stat-avg-quality" style="font-size:1.4rem; font-weight:700; color:#10b981;">—</div>
+              </div>
+              <div style="flex:1; background:rgba(255,255,255,0.02); border:1px solid var(--glass-border); border-radius:8px; padding:0.75rem; text-align:center;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:0.25rem;">Total Retries</div>
+                <div id="stat-total-retries" style="font-size:1.4rem; font-weight:700; color:#f59e0b;">—</div>
+              </div>
+              <div style="flex:1; background:rgba(255,255,255,0.02); border:1px solid var(--glass-border); border-radius:8px; padding:0.75rem; text-align:center;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:0.25rem;">Active Topologies</div>
+                <div id="stat-active-topologies" style="font-size:1.4rem; font-weight:700; color:#6366f1;">—</div>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div style="flex:1;overflow:auto;">
+              <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr style="background:rgba(0,0,0,0.25);color:var(--text-secondary);font-size:0.78em;text-transform:uppercase;letter-spacing:0.05em;">
+                    <th style="padding:0.65rem 0.75rem;text-align:left;white-space:nowrap;">Started</th>
+                    <th style="padding:0.65rem 0.75rem;text-align:left;">Prompt / Summary</th>
+                    <th style="padding:0.65rem 0.75rem;text-align:left;">Agents</th>
+                    <th style="padding:0.65rem 0.75rem;text-align:left;white-space:nowrap;">Duration</th>
+                    <th style="padding:0.65rem 0.75rem;text-align:left;white-space:nowrap;">Quality</th>
+                    <th style="padding:0.65rem 0.75rem;text-align:left;">Status</th>
+                    <th style="padding:0.65rem 0.75rem;text-align:left;">CI / PR</th>
+                    <th style="padding:0.65rem 0.75rem;text-align:left;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="swarm-history-tbody"></tbody>
+              </table>
+
+              <!-- Empty state -->
+              <div id="swarm-history-empty" style="display:none;padding:4rem 2rem;text-align:center;opacity:0.55;">
+                <div style="font-size:3rem;margin-bottom:1rem;">🤖</div>
+                <h4 style="margin:0 0 0.5rem;">No swarm runs yet</h4>
+                <p style="font-size:0.85em;color:var(--text-secondary);">Execute a swarm from the AI Magic panel to see its history here.</p>
+              </div>
+            </div>
+
+            <!-- Footer hint -->
+            <div style="padding:0.6rem 1.25rem;border-top:1px solid var(--glass-border);font-size:0.75em;color:var(--text-secondary);flex-shrink:0;">
+              Shows last 50 swarm runs. Click <strong>▶ Replay</strong> to re-run a past task, or <strong>🗑</strong> to soft-delete the record.
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Planning Modal -->
+      <div id="plan-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center; backdrop-filter: blur(5px);">
+        <div class="glass-card" style="width: 80%; max-width: 800px; max-height: 80vh; overflow-y:auto; border: 1px solid var(--accent-primary);">
+          <h2 style="margin-top:0;">Implementation Plan</h2>
+          <p style="color: #aaa;">Review the proposed steps before the AI starts executing.</p>
+          <div id="plan-content" style="padding: 1rem; background: rgba(0,0,0,0.4); border-radius: 8px; margin: 1rem 0; white-space: pre-wrap; font-family: monospace; line-height: 1.5;"></div>
+          <div style="display:flex; justify-content:flex-end; gap: 1rem;">
+            <button class="btn btn-secondary" id="reject-plan-btn">Cancel</button>
+            <button class="btn btn-primary" id="approve-plan-btn">Approve & Execute</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLI Output Area -->
+      <div class="cli-output-container glass-card">
+        <div class="cli-header">
+          <h3>Terminal Output <span id="loading-spinner" style="display:none; font-size: 0.8em; margin-left: 10px; color: var(--accent-primary);">⏳ Running...</span></h3>
+          <button id="copy-btn" class="btn-secondary" disabled>Copy Output</button>
+        </div>
+        <div class="cli-terminal">
+          <code id="cli-output">Select an action to execute a command...</code>
+        </div>
+        <div id="copy-toast" class="toast">Output copied to clipboard!</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Premium Glassmorphic Login Overlay -->
+  <div id="login-overlay" style="display:none; position:fixed; inset:0; background:rgba(10, 10, 18, 0.7); backdrop-filter: blur(20px); z-index: 99999; align-items: center; justify-content: center; transition: all 0.3s ease;">
+    <div class="glass-card" style="width: 90%; max-width: 420px; padding: 2.5rem; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; background: rgba(255, 255, 255, 0.03); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4); text-align: center; position: relative; overflow: hidden;">
+      <div style="position: absolute; top: -50px; left: -50px; width: 120px; height: 120px; background: rgba(99, 102, 241, 0.15); filter: blur(30px); border-radius: 50%;"></div>
+      <div style="position: absolute; bottom: -50px; right: -50px; width: 120px; height: 120px; background: rgba(167, 139, 250, 0.15); filter: blur(30px); border-radius: 50%;"></div>
+      
+      <div class="logo-icon" style="margin: 0 auto 1rem; width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #6366f1, #a78bfa); flex-shrink: 0; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);"></div>
+      <h2 id="login-title" style="margin: 0 0 0.5rem; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.8rem; background: linear-gradient(135deg, #fff, #cbd5e1); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Sign in to Pavi</h2>
+      <p id="login-subtitle" style="margin: 0 0 2rem; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4;">Enter your credentials to manage your AI workspace.</p>
+      
+      <!-- Error Message Box -->
+      <div id="login-error" style="display: none; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1.5rem; text-align: left; line-height: 1.4;"></div>
+
+      <form id="login-form" style="display: flex; flex-direction: column; gap: 1.25rem;">
+        <div style="text-align: left; display: flex; flex-direction: column; gap: 0.4rem;">
+          <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Username</label>
+          <input type="text" id="login-username" required placeholder="e.g. admin" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0, 0, 0, 0.2); color: #fff; font-size: 0.95rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='rgba(255, 255, 255, 0.08)'">
+        </div>
+        <div style="text-align: left; display: flex; flex-direction: column; gap: 0.4rem;">
+          <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Password</label>
+          <input type="password" id="login-password" required placeholder="••••••••" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0, 0, 0, 0.2); color: #fff; font-size: 0.95rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='rgba(255, 255, 255, 0.08)'">
+        </div>
+        
+        <button type="submit" id="login-btn" class="btn btn-primary" style="margin-top: 0.75rem; padding: 0.8rem; border-radius: 8px; font-weight: bold; background: linear-gradient(135deg, #6366f1, #a78bfa); border: none; font-size: 1rem; cursor: pointer; transition: opacity 0.2s;">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

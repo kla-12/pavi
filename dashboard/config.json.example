@@ -1,0 +1,14 @@
+{
+    "workerUrl": "http://127.0.0.1:11434/v1/chat/completions",
+    "workerModel": "phi3:mini",
+    "workerKeys": [
+        "local_mode"
+    ],
+    "workerKey": "local_mode",
+    "reviewerUrl": "https://api.groq.com/openai/v1/chat/completions",
+    "reviewerModel": "llama-3.3-70b-versatile",
+    "reviewerKeys": [
+        "your_groq_api_key_here"
+    ],
+    "reviewerKey": "your_groq_api_key_here"
+}

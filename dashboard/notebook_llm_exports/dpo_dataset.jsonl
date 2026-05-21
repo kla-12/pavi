@@ -1,0 +1,1 @@
+{"prompt":"Write a function to add two numbers.","rejected":"def add(a, b): return a - b","chosen":"def add(a, b): return a + b","critique":"Worker used minus sign instead of plus sign."}

@@ -1,0 +1,35 @@
+{
+  "name": "Pavi AI Control Center",
+  "short_name": "Pavi",
+  "description": "Remote control panel for your local Pavi AI development platform.",
+  "start_url": "/mobile",
+  "display": "standalone",
+  "background_color": "#0f111a",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/pwa/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/pwa/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/pwa/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    { "src": "/pwa/screenshot-mobile.png", "sizes": "390x844", "type": "image/png", "form_factor": "narrow" }
+  ],
+  "categories": ["developer", "productivity"],
+  "shortcuts": [
+    {
+      "name": "New Task",
+      "short_name": "Task",
+      "description": "Trigger a new swarm task",
+      "url": "/mobile#swarm",
+      "icons": [{ "src": "/pwa/shortcut-task.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "View History",
+      "short_name": "History",
+      "description": "View swarm run history",
+      "url": "/mobile#history",
+      "icons": [{ "src": "/pwa/shortcut-history.png", "sizes": "96x96" }]
+    }
+  ]
+}

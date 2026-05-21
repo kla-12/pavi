@@ -1,0 +1,27 @@
+{
+  "add_input_validation": {
+    "wins": 2,
+    "attempts": 4,
+    "winRate": 0.5
+  },
+  "add_try_catch": {
+    "wins": 1,
+    "attempts": 3,
+    "winRate": 0.333
+  },
+  "optimize_loops": {
+    "wins": 0,
+    "attempts": 3,
+    "winRate": 0
+  },
+  "add_lru_cache": {
+    "wins": 0,
+    "attempts": 2,
+    "winRate": 0
+  },
+  "add_early_return": {
+    "wins": 0,
+    "attempts": 2,
+    "winRate": 0
+  }
+}

@@ -1,0 +1,18 @@
+# Dockerfile.phase-d
+# Pavi Swarm Agent Sandbox — Phase D Autonomous CI/CD
+# ─────────────────────────────────────────────────────────────
+# Extends standard sandbox with git capabilities and node:20
+
+FROM node:20-alpine
+
+# Install git and other utilities
+RUN apk add --no-cache git ca-certificates openssh-client jq
+
+# Create a non-root user
+RUN addgroup -S paviagent && adduser -S paviagent -G paviagent -d /workspace -s /bin/sh
+
+WORKDIR /workspace
+
+USER paviagent
+
+CMD ["/bin/sh"]

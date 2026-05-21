@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "tag": { "type": "string" },
+    "summary": { "type": "string" },
+    "knowledge": {
+      "type": "object",
+      "properties": {
+        "whenToUse": { "type": "string" },
+        "codeExample": { "type": ["string", "null"] },
+        "antiPattern": { "type": ["string", "null"] },
+        "relatedSkills": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "complexityHint": { "type": "string" }
+      },
+      "required": ["whenToUse"]
+    },
+    "skeleton": { "type": ["string", "null"] },
+    "sourceRepo": { "type": "string" }
+  },
+  "required": ["tag", "summary", "knowledge"]
+}

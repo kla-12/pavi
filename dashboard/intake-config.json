@@ -1,0 +1,33 @@
+{
+  "domainKeywords": [
+    "api", "agent", "llm", "orchestrat", "async", "queue", "worker",
+    "embed", "vector", "schema", "middleware", "cache", "retry", "webhook",
+    "batch", "stream", "token", "prompt", "inference", "model", "pipeline",
+    "fetch", "http", "server", "route", "endpoint", "auth", "session",
+    "event", "emit", "socket", "pubsub", "spawn", "thread", "pool"
+  ],
+  "universalPatterns": [
+    "retry", "backoff", "debounce", "throttle", "circuit",
+    "queue", "state machine", "event bus", "pool", "buffer",
+    "rate limit", "exponential", "fibonacci", "jitter",
+    "dead letter", "idempotent", "dedup", "mutex", "semaphore"
+  ],
+  "hardRejectExtensions": [".ino", ".hex", ".o", ".s", ".a", ".elf"],
+  "hardRejectKeywords": [
+    "void setup()", "void loop()", "digitalWrite", "analogRead",
+    "#include <Arduino", "pinMode(", "Serial.begin(", "millis()",
+    "register uint8_t", "__AVR_"
+  ],
+  "hardRejectDomains": [
+    "firmware", "embedded c", "microcontroller", "avr", "stm32",
+    "raspberry pi gpio", "bare metal", "rtos"
+  ],
+  "thresholds": {
+    "full": 0.40,
+    "partial": 0.25
+  },
+  "quarantineRescore": {
+    "intervalHours": 24,
+    "maxAgeDays": 30
+  }
+}

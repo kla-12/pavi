@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pavi — Remote Auth</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #0f111a;
+      --panel: #151824;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --error: #ef4444;
+      --border: #23273a;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    body {
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .login-container {
+      width: 100%;
+      max-width: 380px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 30px 24px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+    
+    .logo-container {
+      margin-bottom: 24px;
+    }
+    
+    .logo {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    p {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+    
+    .pin-display {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+    
+    .pin-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      transition: all 0.15s ease;
+    }
+    
+    .pin-dot.filled {
+      background: var(--primary);
+      border-color: var(--primary);
+      transform: scale(1.15);
+      box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+    }
+    
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .key {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.1s ease;
+    }
+    
+    .key:active {
+      background: rgba(255, 255, 255, 0.08);
+      transform: scale(0.95);
+      border-color: var(--primary);
+    }
+    
+    .key.special {
+      background: transparent;
+      border-color: transparent;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    
+    .key.special:active {
+      background: rgba(255, 255, 255, 0.02);
+      transform: none;
+    }
+    
+    .error-msg {
+      color: var(--error);
+      font-size: 14px;
+      margin-bottom: 16px;
+      min-height: 20px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    
+    .fallback-btn {
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: underline;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    
+    .fallback-btn:hover {
+      color: var(--text);
+    }
+    
+    /* Standard Auth Form Fallback (hidden by default) */
+    .form-auth {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      text-align: left;
+    }
+    
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .form-group label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+    }
+    
+    .form-group input {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    .form-group input:focus {
+      border-color: var(--primary);
+    }
+    
+    .submit-btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 10px;
+    }
+    
+    .submit-btn:hover {
+      background: var(--primary-hover);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="logo-container">
+      <div class="logo">PAVI</div>
+      <h2>Control Center</h2>
+    </div>
+    
+    <div id="error-box" class="error-msg"></div>
+    
+    <!-- PIN PAD UI -->
+    <div id="pin-ui">
+      <p>Enter 6-digit Remote Control PIN</p>
+      
+      <div class="pin-display">
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+      </div>
+      
+      <div class="keypad">
+        <div class="key" onclick="pressKey(1)">1</div>
+        <div class="key" onclick="pressKey(2)">2</div>
+        <div class="key" onclick="pressKey(3)">3</div>
+        <div class="key" onclick="pressKey(4)">4</div>
+        <div class="key" onclick="pressKey(5)">5</div>
+        <div class="key" onclick="pressKey(6)">6</div>
+        <div class="key" onclick="pressKey(7)">7</div>
+        <div class="key" onclick="pressKey(8)">8</div>
+        <div class="key" onclick="pressKey(9)">9</div>
+        <div class="key special" onclick="clearPin()">CLEAR</div>
+        <div class="key" onclick="pressKey(0)">0</div>
+        <div class="key special" onclick="backspacePin()">⌫</div>
+      </div>
+      
+      <button class="fallback-btn" onclick="toggleMode('form')">Login with Username & Password</button>
+    </div>
+    
+    <!-- FORM FALLBACK -->
+    <div id="form-ui" class="form-auth">
+      <p style="text-align: center; margin-bottom: 12px;">Admin Credentials Portal</p>
+      
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="e.g. admin">
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••">
+      </div>
+      
+      <button class="submit-btn" onclick="submitForm()">Sign In</button>
+      
+      <button class="fallback-btn" style="text-align: center;" onclick="toggleMode('pin')">Use PIN Code Pad</button>
+    </div>
+  </div>
+
+  <script>
+    let currentPin = '';
+    const MAX_PIN_LENGTH = 6;
+    const errorBox = document.getElementById('error-box');
+    const dots = document.querySelectorAll('.pin-dot');
+    
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.style.opacity = 1;
+      setTimeout(() => {
+        errorBox.style.opacity = 0;
+      }, 5000);
+    }
+    
+    function updateDots() {
+      dots.forEach((dot, index) => {
+        if (index < currentPin.length) {
+          dot.classList.add('filled');
+        } else {
+          dot.classList.remove('filled');
+        }
+      });
+    }
+    
+    async function pressKey(num) {
+      if (currentPin.length >= MAX_PIN_LENGTH) return;
+      currentPin += num;
+      updateDots();
+      
+      if (currentPin.length === MAX_PIN_LENGTH) {
+        // Automatically submit
+        await submitPin();
+      }
+    }
+    
+    function clearPin() {
+      currentPin = '';
+      updateDots();
+    }
+    
+    function backspacePin() {
+      currentPin = currentPin.slice(0, -1);
+      updateDots();
+    }
+    
+    async function submitPin() {
+      try {
+        const response = await fetch('/api/auth/mobile-pin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: currentPin })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          window.location.href = '/mobile';
+        } else {
+          showError(data.error || 'Authentication failed.');
+          clearPin();
+        }
+      } catch (err) {
+        showError('Network error. Is Pavi server online?');
+        clearPin();
+      }
+    }
+    
+    async function submitForm() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      
+      if (!username || !password) {
+        showError('Please enter username and password.');
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          window.location.href = '/mobile';
+        } else {
+          showError(data.error || 'Login verification failed.');
+        }
+      } catch (err) {
+        showError('Network error connecting to Pavi.');
+      }
+    }
+    
+    function toggleMode(mode) {
+      const pinUI = document.getElementById('pin-ui');
+      const formUI = document.getElementById('form-ui');
+      
+      if (mode === 'pin') {
+        pinUI.style.display = 'block';
+        formUI.style.display = 'none';
+        clearPin();
+      } else {
+        pinUI.style.display = 'none';
+        formUI.style.display = 'flex';
+      }
+    }
+  </script>
+
+</body>
+</html>

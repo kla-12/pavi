@@ -1,0 +1,31 @@
+# Dockerfile.sandbox
+# Pavi Swarm Agent Sandbox — Hardened execution environment
+# ─────────────────────────────────────────────────────────────
+# Build: docker build -f Dockerfile.sandbox -t pavi-swarm-sandbox .
+# This image is used automatically by swarm-orchestrator.js when
+# Docker is available (PAVI_CONTAINER_SANDBOX=true).
+
+FROM node:18-slim
+
+# Disable package manager interaction
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install only what's needed for claude-flow
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user — agents must NOT run as root
+RUN groupadd -r paviagent && useradd -r -g paviagent -d /workspace -s /sbin/nologin paviagent
+
+WORKDIR /workspace
+
+# Copy node_modules from the host via bind mount at runtime (no COPY here)
+# The HostConfig.Binds in swarm-orchestrator.js mounts the project directory.
+
+# Switch to non-root user
+USER paviagent
+
+# Default entrypoint is overridden by swarm-orchestrator.js Cmd
+CMD ["/bin/sh"]

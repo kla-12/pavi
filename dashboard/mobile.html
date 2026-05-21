@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0f111a">
+  <title>Pavi Mobile</title>
+  <link rel="manifest" href="/pwa/manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f111a;
+      --surface: rgba(30,41,59,0.7);
+      --border: rgba(255,255,255,0.09);
+      --accent: #6366f1;
+      --accent2: #a78bfa;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --font: 'Inter', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+
+    /* ── Ambient background ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: -1;
+      background: radial-gradient(ellipse at 20% 10%, rgba(99,102,241,0.18) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 80%, rgba(167,139,250,0.12) 0%, transparent 60%);
+    }
+
+    /* ── Header ── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      padding: 14px 18px;
+      background: rgba(15,17,26,0.9);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo-row { display: flex; align-items: center; gap: 10px; }
+    .logo-dot { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg,#6366f1,#3b82f6); box-shadow: 0 0 12px rgba(99,102,241,0.5); }
+    header h1 { font-size: 1.15rem; font-weight: 700; background: linear-gradient(135deg,#a78bfa,#6366f1); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    #conn-badge {
+      font-size: 0.72em; padding: 4px 10px; border-radius: 20px;
+      background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+    #conn-badge.disconnected { color: var(--red); border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.1); }
+    #conn-badge.disconnected .conn-dot { background: var(--red); }
+
+    /* ── Main layout ── */
+    main { padding: 16px; display: flex; flex-direction: column; gap: 16px; max-width: 480px; margin: 0 auto; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .card-title {
+      font-size: 0.82em; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+      color: var(--accent2); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+
+    /* ── Status Panel ── */
+    .status-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .folder-name { font-size: 0.88em; color: var(--text); font-family: monospace; background: rgba(0,0,0,0.3); padding: 6px 10px; border-radius: 8px; word-break: break-all; }
+    .status-chip {
+      font-size: 0.75em; padding: 4px 12px; border-radius: 20px; font-weight: 600;
+      background: rgba(100,116,139,0.2); color: var(--muted); border: 1px solid rgba(100,116,139,0.3);
+      transition: all 0.3s ease;
+    }
+    .status-chip.running { background: rgba(99,102,241,0.2); color: var(--accent2); border-color: rgba(99,102,241,0.4); }
+    .status-chip.learning { background: rgba(16,185,129,0.15); color: var(--green); border-color: rgba(16,185,129,0.3); animation: glow 1.5s infinite alternate; }
+    .status-chip.done { background: rgba(16,185,129,0.15); color: var(--green); border-color: rgba(16,185,129,0.3); }
+    @keyframes glow { from{box-shadow:none} to{box-shadow:0 0 10px rgba(16,185,129,0.4)} }
+
+    /* ── Live Log ── */
+    #log-feed {
+      height: 180px; overflow-y: auto; background: rgba(0,0,0,0.4); border-radius: 10px;
+      padding: 10px; font-family: monospace; font-size: 0.75em;
+      color: #a78bfa; display: flex; flex-direction: column; gap: 3px;
+      border: 1px solid rgba(99,102,241,0.2);
+    }
+    .log-line { opacity: 0; animation: fadeSlide 0.3s ease forwards; color: #94a3b8; }
+    .log-line.green { color: #10b981; }
+    .log-line.amber { color: #f59e0b; }
+    .log-line.red { color: #ef4444; }
+    .log-line.accent { color: #a78bfa; }
+    @keyframes fadeSlide { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── GitHub Ingest ── */
+    .gh-input-row { display: flex; flex-direction: column; gap: 10px; }
+    input[type="url"], input[type="text"], textarea {
+      width: 100%; padding: 12px 14px; border-radius: 10px;
+      border: 1px solid var(--border); background: rgba(0,0,0,0.3);
+      color: var(--text); font-family: var(--font); font-size: 0.88em;
+      outline: none; transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
+    textarea { resize: vertical; min-height: 90px; }
+
+    .btn {
+      width: 100%; padding: 13px; border-radius: 10px; border: none;
+      font-family: var(--font); font-weight: 600; font-size: 0.9em;
+      cursor: pointer; transition: all 0.2s ease; -webkit-tap-highlight-color: transparent;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg,#6366f1,#3b82f6);
+      color: white; box-shadow: 0 4px 15px rgba(99,102,241,0.35);
+    }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-green {
+      background: linear-gradient(135deg,#059669,#10b981);
+      color: white; box-shadow: 0 4px 15px rgba(16,185,129,0.3);
+    }
+    .btn-green:active { transform: scale(0.97); }
+
+    /* ── Progress bar ── */
+    #gh-progress-wrap { display: none; margin-top: 12px; }
+    .progress-bar-bg { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg,#6366f1,#10b981); transition: width 0.3s ease; width: 0%; }
+    #gh-status-text { font-size: 0.78em; color: var(--muted); margin-top: 6px; text-align: center; }
+    #gh-result { display:none; text-align:center; font-size:0.85em; padding: 10px; border-radius: 8px; margin-top: 8px; }
+
+    /* ── Context Notes ── */
+    #note-saved-indicator { display:none; font-size:0.8em; color: var(--green); text-align:center; margin-top:8px; }
+
+    /* ── Desktop context notes received ── */
+    #notes-list { display: flex; flex-direction: column; gap: 8px; max-height: 150px; overflow-y: auto; }
+    .note-item { padding: 8px 10px; border-radius: 8px; background: rgba(99,102,241,0.1); border-left: 3px solid var(--accent); font-size: 0.82em; color: var(--text); }
+    .note-time { font-size: 0.72em; color: var(--muted); margin-top: 2px; }
+
+    /* ── Task text ── */
+    #current-task-text { font-size: 0.85em; color: var(--accent2); font-style: italic; margin-top: 6px; min-height: 18px; }
+
+    /* ── Tabs ── */
+    .tabs-nav {
+      display: flex;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+      position: sticky;
+      top: 56px;
+      background: rgba(15,17,26,0.9);
+      z-index: 90;
+      backdrop-filter: blur(20px);
+      padding: 0 16px;
+      gap: 12px;
+    }
+    .tabs-nav::-webkit-scrollbar {
+      display: none;
+    }
+    .tab-btn {
+      flex: 0 0 auto;
+      padding: 12px 6px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9em;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+    .tab-badge { position: absolute; top: 8px; right: 8px; background: rgba(99,102,241,0.2); color: var(--accent2); font-size: 0.65em; padding: 2px 6px; border-radius: 10px; display: none; }
+    .tab-badge.show { display: inline-block; }
+    .tab-content { display: none; }
+    .tab-content.active { display: flex; flex-direction: column; gap: 16px; }
+
+    /* ── Queue & Repo Lists ── */
+    .section-title { font-size: 0.75em; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin: 12px 0 8px 4px; }
+    .list-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start; }
+    .item-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(99,102,241,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.2em; flex-shrink: 0; }
+    .item-icon.running { background: rgba(99,102,241,0.2); color: #a78bfa; animation: spin 2s linear infinite; }
+    .item-icon.queued { background: rgba(100,116,139,0.2); color: var(--muted); }
+    .item-icon.done { background: rgba(16,185,129,0.15); color: var(--green); }
+    .item-details { flex: 1; min-width: 0; }
+    .item-title { font-weight: 600; font-size: 0.9em; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-sub { font-size: 0.75em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px; }
+    .item-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.75em; }
+    
+    .status-badge { padding: 3px 8px; border-radius: 12px; font-weight: 600; font-size: 0.9em; }
+    .status-badge.running { background: rgba(99,102,241,0.15); color: #a78bfa; }
+    .status-badge.queued { background: rgba(100,116,139,0.2); color: var(--muted); }
+    .status-badge.done { background: rgba(16,185,129,0.15); color: var(--green); }
+    .status-badge.upgraded { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-row">
+    <div class="logo-dot"></div>
+    <h1>Pavi Mobile</h1>
+  </div>
+  <div id="conn-badge">
+    <span class="conn-dot"></span>
+    <span id="conn-text">Connecting...</span>
+  </div>
+</header>
+
+<!-- Tabs Navigation -->
+<div class="tabs-nav">
+  <div class="tab-btn active" onclick="switchTab('ingest')">Ingest</div>
+  <div class="tab-btn" onclick="switchTab('queue')">Queue <span class="tab-badge" id="queue-badge">0</span></div>
+  <div class="tab-btn" onclick="switchTab('repos')">Repos</div>
+  <div class="tab-btn" onclick="switchTab('chat')">Chat</div>
+  <div class="tab-btn" onclick="switchTab('history')">History</div>
+  <div class="tab-btn" onclick="switchTab('swarm')">Swarm</div>
+  <div class="tab-btn" onclick="switchTab('cicd')">CI/CD</div>
+  <div class="tab-btn" onclick="switchTab('intel')" id="intel-tab-btn">🧬 Intel <span class="tab-badge" id="intel-badge"></span></div>
+</div>
+
+
+<main>
+  <!-- ── Ingest Tab ── -->
+  <div id="tab-ingest" class="tab-content active">
+    <div class="card">
+      <div class="card-title">🧠 GitHub Brain Dump</div>
+      <p style="font-size:0.82em;color:var(--muted);margin-bottom:14px">Paste a GitHub URL to add it to the learning queue.</p>
+      <div class="gh-input-row">
+        <input type="url" id="gh-url" placeholder="https://github.com/owner/repo" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <input type="text" id="gh-label" placeholder="Label (e.g., auth service)" autocomplete="off">
+        <input type="text" id="gh-branch" placeholder="Branch (default: main)" autocomplete="off">
+        <button class="btn btn-primary" id="gh-ingest-btn" onclick="startGithubIngest()">🚀 Add to Queue</button>
+      </div>
+      <div id="gh-result"></div>
+    </div>
+  </div>
+
+  <!-- ── Queue Tab ── -->
+  <div id="tab-queue" class="tab-content">
+    <div class="card" id="queue-controls" style="margin-bottom: 20px;">
+      <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>⚙️ Queue Controls</span>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-amber" style="flex:1" onclick="resetFailedJobs()">🔄 Retry Failed</button>
+        <button class="btn btn-red" style="flex:1" onclick="clearQueue()">🗑️ Clear All</button>
+      </div>
+    </div>
+
+    <div id="queue-running-section" style="display:none">
+      <div class="section-title">Running</div>
+      <div id="queue-running-list"></div>
+    </div>
+    <div id="queue-queued-section" style="display:none">
+      <div class="section-title">Queued</div>
+      <div id="queue-queued-list"></div>
+    </div>
+    <div id="queue-completed-section" style="display:none">
+      <div class="section-title">Completed / Failed</div>
+      <div id="queue-completed-list"></div>
+    </div>
+    <div id="queue-empty" style="text-align:center; padding: 40px 20px; color: var(--muted); font-size: 0.9em;">
+      Queue is empty.
+    </div>
+  </div>
+
+  <!-- ── Repos Tab ── -->
+  <div id="tab-repos" class="tab-content">
+    <div id="repos-list">
+      <div style="text-align:center; padding: 40px 20px; color: var(--muted); font-size: 0.9em;">Loading repos...</div>
+    </div>
+  </div>
+
+  <!-- ── Chat Tab ── -->
+  <div id="tab-chat" class="tab-content">
+    <div class="card">
+      <div class="card-title">📡 Live Session</div>
+      <div class="status-row">
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size:0.75em;color:var(--muted);margin-bottom:4px">Working Folder</div>
+          <div class="folder-name" id="folder-name">Not selected yet</div>
+          <div id="current-task-text">Waiting for desktop...</div>
+        </div>
+        <span class="status-chip" id="status-chip">idle</span>
+      </div>
+      <div id="log-feed">
+        <div class="log-line accent">Connecting to Pavi session...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📝 Send Context to Laptop</div>
+      <p style="font-size:0.82em;color:var(--muted);margin-bottom:12px">Type anything — requirements, corrections, ideas. It will appear on the desktop in real-time.</p>
+      <textarea id="context-note" placeholder="e.g. Use dark mode, add authentication..."></textarea>
+      <button class="btn btn-green" style="margin-top:10px" onclick="sendNote()">📤 Save to Laptop</button>
+      <div id="note-saved-indicator">✅ Saved to laptop!</div>
+    </div>
+
+    <!-- Notes from Desktop -->
+    <div class="card" id="notes-card" style="display:none">
+      <div class="card-title">💬 Notes from Desktop</div>
+      <div id="notes-list"></div>
+    </div>
+  </div>
+
+  <!-- ── History Tab ── -->
+  <div id="tab-history" class="tab-content">
+    <div class="card" id="history-controls" style="margin-bottom: 20px;">
+      <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>📜 Past Swarm Runs</span>
+        <button class="btn btn-secondary" style="padding:4px 10px; width:auto; font-size:0.75em;" onclick="loadHistoryMobile()">🔄 Refresh</button>
+      </div>
+    </div>
+    
+    <div id="history-list-mobile">
+      <div style="color:var(--muted);font-size:0.82em;text-align:center;padding:16px">No history found.</div>
+    </div>
+  </div>
+
+  <!-- ── Swarm Tab ── -->
+  <div id="tab-swarm" class="tab-content">
+    <div class="card">
+      <div class="card-title">🐝 Active Swarm Control</div>
+      <p style="font-size:0.82em;color:var(--muted);margin-bottom:14px">Monitor and coordinate active agentic swarm sessions in real-time.</p>
+      
+      <div id="active-swarm-container">
+        <div style="text-align:center; padding: 20px; color: var(--muted); font-size: 0.9em;">
+          No active swarm sessions currently running.
+        </div>
+      </div>
+      
+      <button class="btn btn-red" id="cancel-swarm-btn" style="margin-top:14px; display:none" onclick="cancelActiveSwarm()">
+        🛑 Cancel Active Swarm Session
+      </button>
+    </div>
+  </div>
+
+  <!-- ── CI/CD Tab ── -->
+  <div id="tab-cicd" class="tab-content">
+    <div class="card">
+      <div class="card-title">🚀 CI / CD Pipeline</div>
+      <p style="font-size:0.82em;color:var(--muted);margin-bottom:14px">Real-time build, test, and release jobs overview.</p>
+      
+      <div id="cicd-jobs-list">
+        <div style="text-align:center; padding: 20px; color: var(--muted); font-size: 0.9em;">
+          No CI/CD pipeline history available.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Intelligence Tab ── -->
+  <div id="tab-intel" class="tab-content">
+
+    <!-- Pending Writes -->
+    <div class="card">
+      <div class="card-title">📝 Writes Awaiting Approval <span id="pending-writes-count-badge-mobile" style="background:var(--red); color:#fff; font-size:0.75rem; padding:2px 6px; border-radius:10px; margin-left:6px; display:none;">0</span></div>
+      <p style="font-size:0.78em;color:var(--muted);margin-bottom:12px">File write edits intercepted by the sandbox agent for manual security review.</p>
+      <div id="pending-writes-list-mobile">
+        <div style="color:var(--muted);font-size:0.82em;text-align:center;padding:16px">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Staged Skills -->
+    <div class="card">
+      <div class="card-title">✨ Skills Awaiting Approval</div>
+      <p style="font-size:0.78em;color:var(--muted);margin-bottom:12px">Pavi discovered these new capabilities from ingested repos. Review and approve or discard.</p>
+      <div id="staged-skills-list">
+        <div style="color:var(--muted);font-size:0.82em;text-align:center;padding:16px">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Capability Gaps -->
+    <div class="card">
+      <div class="card-title">🔍 Detected Capability Gaps</div>
+      <p style="font-size:0.78em;color:var(--muted);margin-bottom:12px">Patterns found in repos that Pavi doesn’t yet have a skill for.</p>
+      <div id="gaps-list">
+        <div style="color:var(--muted);font-size:0.82em;text-align:center;padding:16px">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Quarantine -->
+    <div class="card" id="quarantine-card">
+      <div class="card-title">🔶 Quarantined Repos</div>
+      <p style="font-size:0.78em;color:var(--muted);margin-bottom:12px">Low-relevance repos stored for nightly rescore.</p>
+      <div id="quarantine-list">
+        <div style="color:var(--muted);font-size:0.82em;text-align:center;padding:16px">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Audit Log -->
+    <div class="card">
+      <div class="card-title">📜 Audit Trail</div>
+      <div id="audit-log-list" style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
+        <div style="color:var(--muted);font-size:0.82em;text-align:center;padding:16px">Loading...</div>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  // ── Config ─────────────────────────────────────────────────────────────
+  const SERVER = window.location.origin; // auto-detect: http://192.168.x.x:3000
+  
+  // Override fetch to always include ngrok bypass header AND credentials (cookies)
+  const originalFetch = window.fetch;
+  window.fetch = function(resource, config) {
+    if (!config) config = {};
+    if (!config.headers) config.headers = {};
+    // Always include the httpOnly session cookie
+    config.credentials = 'include';
+    // Bypass ngrok interstitial
+    if (typeof config.headers === 'object' && !(config.headers instanceof Headers)) {
+      config.headers['ngrok-skip-browser-warning'] = 'true';
+    } else if (config.headers instanceof Headers) {
+      config.headers.set('ngrok-skip-browser-warning', 'true');
+    }
+    return originalFetch.call(window, resource, config);
+  };
+
+  let es = null;
+  let reconnectTimer = null;
+  let lastEventId = 0; // tracks last received SSE event ID for seamless reconnect
+  let ghTotal = 0;
+  let ghDone = 0;
+
+  let completedJobs = [];
+
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.querySelector(`.tab-btn[onclick="switchTab('${tabId}')"]`).classList.add('active');
+    document.getElementById(`tab-${tabId}`).classList.add('active');
+    if (tabId === 'repos') loadRepoStats();
+    if (tabId === 'intel') loadIntelligence();
+    if (tabId === 'history') loadHistoryMobile();
+    if (tabId === 'swarm') loadActiveSwarmStatus();
+    if (tabId === 'cicd') loadCICDJobs();
+  }
+
+  // ── Intelligence Tab ────────────────────────────────────────────────────────
+  async function loadIntelligence() {
+    await Promise.all([loadPendingWritesMobile(), loadStagedSkills(), loadGaps(), loadQuarantine(), loadAuditLog()]);
+  }
+
+  // ── History Tab ────────────────────────────────────────────────────────
+  async function loadHistoryMobile() {
+      const container = document.getElementById('history-list-mobile');
+      if (!container) return;
+      try {
+          container.innerHTML = '<div style="color:var(--muted);font-size:0.82em;text-align:center;padding:16px">Loading history...</div>';
+          const res = await fetch('/api/history?limit=20');
+          const data = await res.json();
+          if (data.success) {
+              if (data.runs.length === 0) {
+                  container.innerHTML = '<div style="color:var(--muted);font-size:0.82em;text-align:center;padding:16px">No history found.</div>';
+                  return;
+              }
+              container.innerHTML = data.runs.map(run => `
+                  <div class="card" style="margin-bottom:12px; padding:12px;">
+                      <div style="font-weight:600; font-size:0.88em; margin-bottom:4px; color:var(--text); line-height:1.4;">${run.prompt}</div>
+                      <div style="display:flex; justify-content:space-between; font-size:0.75em; margin-bottom:8px;">
+                          <span style="color:${run.status==='completed'?'var(--green)':'var(--red)'}">${run.status === 'completed' ? '✅ Completed' : '❌ Failed'}</span>
+                          <span style="color:var(--muted)">${new Date(run.timestamp).toLocaleString()}</span>
+                      </div>
+                      <div style="font-size:0.75em; color:var(--accent2); margin-bottom:10px;">${run.bot_list}</div>
+                      <button class="btn btn-primary" style="padding:8px;" onclick="replayHistoryMobile('${run.id}')">▶ Replay</button>
+                  </div>
+              `).join('');
+          }
+      } catch (e) {
+          container.innerHTML = '<div style="color:var(--red);font-size:0.82em;text-align:center;padding:16px">Failed to load history</div>';
+      }
+  }
+
+  window.replayHistoryMobile = async function(id) {
+      try {
+          const res = await fetch(`/api/history/${id}/replay`, { method: 'POST' });
+          if (res.ok) alert('Replay started!');
+          else alert('Failed to start replay.');
+      } catch(e) { alert(e.message); }
+  };
+
+  async function loadPendingWritesMobile() {
+    const el = document.getElementById('pending-writes-list-mobile');
+    const badge = document.getElementById('pending-writes-count-badge-mobile');
+    try {
+      const res = await fetch(`${SERVER}/api/files/pending`);
+      const data = await res.json();
+      const pending = data.changes || [];
+
+      if (badge) {
+        badge.textContent = pending.length;
+        badge.style.display = pending.length > 0 ? 'inline-block' : 'none';
+      }
+
+      if (pending.length === 0) {
+        el.innerHTML = `<div style="color:var(--muted);font-size:0.82em;text-align:center;padding:16px">No pending write actions.</div>`;
+        return;
+      }
+
+      el.innerHTML = pending.map(change => {
+        const fullPath = change.file_path || '';
+        const fileName = fullPath.substring(Math.max(fullPath.lastIndexOf('/'), fullPath.lastIndexOf('\\')) + 1);
+        
+        // Generate a colored inline diff for mobile view
+        const origLines = (change.original_content || '').split('\n');
+        const propLines = (change.proposed_content || '').split('\n');
+        const maxLines = Math.max(origLines.length, propLines.length);
+        
+        let diffHtml = '';
+        let diffCount = 0;
+        for (let i = 0; i < maxLines; i++) {
+          const orig = origLines[i];
+          const prop = propLines[i];
+          if (orig !== prop) {
+            diffCount++;
+            if (diffCount > 50) {
+              diffHtml += `<div style="font-size:0.75em;color:var(--muted);padding:4px;text-align:center;">... and more changes ...</div>`;
+              break;
+            }
+            if (orig !== undefined && prop !== undefined) {
+              diffHtml += `
+                <div style="background:rgba(239, 68, 68, 0.15);color:#f87171;padding:2px 6px;text-decoration:line-through;white-space:pre-wrap;font-size:0.75em;">-${orig}</div>
+                <div style="background:rgba(16, 185, 129, 0.15);color:#34d399;padding:2px 6px;white-space:pre-wrap;font-size:0.75em;">+${prop}</div>
+              `;
+            } else if (orig !== undefined) {
+              diffHtml += `
+                <div style="background:rgba(239, 68, 68, 0.15);color:#f87171;padding:2px 6px;text-decoration:line-through;white-space:pre-wrap;font-size:0.75em;">-${orig}</div>
+              `;
+            } else {
+              diffHtml += `
+                <div style="background:rgba(16, 185, 129, 0.15);color:#34d399;padding:2px 6px;white-space:pre-wrap;font-size:0.75em;">+${prop}</div>
+              `;
+            }
+          }
+        }
+
+        if (diffCount === 0) {
+          diffHtml = `<div style="font-size:0.75em;color:var(--muted);padding:4px;">No differences detected.</div>`;
+        }
+
+        return `
+          <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
+            <div style="font-weight:600;font-size:0.85em;color:var(--accent2);word-break:break-all;">${fileName}</div>
+            <div style="font-size:0.7em;color:var(--muted);margin-top:2px;word-break:break-all;">${fullPath}</div>
+            <div style="font-size:0.7em;color:var(--muted);margin-top:2px;margin-bottom:8px;">Swarm ID: ${change.swarm_run_id}</div>
+            
+            <div style="background:rgba(0,0,0,0.2);border-radius:6px;max-height:200px;overflow-y:auto;font-family:monospace;padding:6px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.05)">
+              ${diffHtml}
+            </div>
+
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-green" style="flex:1;padding:6px 12px;font-size:0.8em;" onclick="respondToPendingChangeMobile(${change.id}, 'approve')">Approve</button>
+              <button class="btn btn-red" style="flex:1;padding:6px 12px;font-size:0.8em;" onclick="respondToPendingChangeMobile(${change.id}, 'reject')">Reject</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      console.error('[FILES] Failed to load pending writes for mobile:', e);
+      el.innerHTML = `<div style="color:var(--red);font-size:0.82em;text-align:center;padding:16px">Failed to load pending changes.</div>`;
+    }
+  }
+
+  async function respondToPendingChangeMobile(id, action) {
+    try {
+      const res = await fetch(`${SERVER}/api/files/pending/${id}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        appendLog(`📝 Intercepted write ${action}d successfully.`, action === 'approve' ? 'green' : 'red');
+        await loadIntelligence();
+      } else {
+        alert(data.error || 'Failed to submit response');
+      }
+    } catch (e) {
+      console.error('[FILES] Failed to respond to pending change on mobile:', e);
+    }
+  }
+
+  window.respondToPendingChangeMobile = respondToPendingChangeMobile;
+
+  async function loadStagedSkills() {
+    const el = document.getElementById('staged-skills-list');
+    try {
+      const res = await fetch(`${SERVER}/api/staging-skills`);
+      const skills = await res.json();
+      const pending = skills.filter(s => s.status === 'staged');
+
+      // Update badge
+      const badge = document.getElementById('intel-badge');
+      if (pending.length > 0) { badge.textContent = pending.length; badge.classList.add('show'); }
+      else badge.classList.remove('show');
+
+      if (pending.length === 0) {
+        el.innerHTML = `<div style="color:var(--muted);font-size:0.82em;text-align:center;padding:16px">No pending skills. Ingest a repo to discover new capabilities.</div>`;
+        return;
+      }
+      el.innerHTML = pending.map(s => `
+        <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:12px;margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+            <span style="font-size:0.88em;font-weight:600;color:var(--accent2)">${s.tag}</span>
+            <span style="font-size:0.7em;background:rgba(99,102,241,0.15);color:var(--accent2);padding:2px 8px;border-radius:10px">${(s.confidence * 100).toFixed(0)}% conf</span>
+          </div>
+          <div style="font-size:0.75em;color:var(--muted);margin-bottom:4px">Intent: ${s.intent}</div>
+          <div style="font-size:0.74em;color:#94a3b8;margin-bottom:10px;line-height:1.4">${s.description.slice(0, 120)}...</div>
+          <div style="font-size:0.7em;color:var(--muted);margin-bottom:8px">Sources: ${(s.sourceRepos || []).join(', ') || 'unknown'}</div>
+          <div style="display:flex;gap:8px">
+            <button onclick="promoteSkill('${s.id}')" style="flex:1;padding:7px;border-radius:8px;border:none;background:rgba(16,185,129,0.2);color:#10b981;font-size:0.78em;font-weight:600;cursor:pointer">✅ Approve</button>
+            <button onclick="discardSkill('${s.id}')" style="flex:1;padding:7px;border-radius:8px;border:none;background:rgba(239,68,68,0.12);color:#ef4444;font-size:0.78em;font-weight:600;cursor:pointer">🗑 Discard</button>
+          </div>
+        </div>`).join('');
+    } catch(e) {
+      el.innerHTML = `<div style="color:var(--red);font-size:0.82em;padding:12px">Error loading staged skills</div>`;
+    }
+  }
+
+  async function promoteSkill(id) {
+    try {
+      const res = await fetch(`${SERVER}/api/staging-skills/promote`, {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      appendLog(data.success ? `✅ Skill promoted: ${data.message}` : `❌ ${data.message}`, data.success ? 'green' : 'red');
+      loadStagedSkills();
+    } catch(e) { appendLog(`❌ Promote failed: ${e.message}`, 'red'); }
+  }
+
+  async function discardSkill(id) {
+    try {
+      const res = await fetch(`${SERVER}/api/staging-skills/discard`, {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      appendLog(`🗑 ${data.message}`, '');
+      loadStagedSkills();
+    } catch(e) { appendLog(`❌ Discard failed: ${e.message}`, 'red'); }
+  }
+
+  async function loadGaps() {
+    const el = document.getElementById('gaps-list');
+    try {
+      const res = await fetch(`${SERVER}/api/skill-gaps`);
+      const gaps = await res.json();
+      const active = gaps.filter(g => g.status === 'pending');
+      if (active.length === 0) {
+        el.innerHTML = `<div style="color:var(--muted);font-size:0.82em;text-align:center;padding:16px">No pending gaps. All discovered capabilities are covered.</div>`;
+        return;
+      }
+      el.innerHTML = active.map(g => `
+        <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:10px;margin-bottom:6px">
+          <div style="font-size:0.85em;font-weight:600;color:var(--amber);margin-bottom:2px">${g.intent}</div>
+          <div style="font-size:0.72em;color:var(--muted)">Suggested: <span style="color:#a78bfa">${g.suggestedTag}</span> · Seen ${g.count}x</div>
+          <div style="font-size:0.7em;color:#64748b;margin-top:2px">From: ${(g.sources || []).map(s => s.repoKey).join(', ').slice(0, 60) || 'unknown'}</div>
+        </div>`).join('');
+    } catch(e) {
+      el.innerHTML = `<div style="color:var(--red);font-size:0.82em">Error loading gaps</div>`;
+    }
+  }
+
+  async function loadQuarantine() {
+    const el = document.getElementById('quarantine-list');
+    try {
+      const res = await fetch(`${SERVER}/api/quarantine`);
+      const repos = await res.json();
+      if (repos.length === 0) {
+        el.innerHTML = `<div style="color:var(--muted);font-size:0.82em;text-align:center;padding:12px">No quarantined repos.</div>`;
+        return;
+      }
+      el.innerHTML = repos.map(r => `
+        <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:10px;padding:10px;margin-bottom:6px">
+          <div style="font-size:0.82em;font-weight:600;color:#fca5a5;word-break:break-all">${r.repoKey}</div>
+          <div style="font-size:0.7em;color:var(--muted);margin-top:2px">Score: ${(r.score * 100).toFixed(0)}% · ${r.reason.slice(0, 60)}</div>
+          ${r.graduated ? '<div style="font-size:0.7em;color:#10b981;margin-top:2px">✅ Graduated — ready for ingest</div>' : ''}
+        </div>`).join('');
+    } catch(e) {
+      el.innerHTML = `<div style="color:var(--red);font-size:0.82em">Error loading quarantine</div>`;
+    }
+  }
+
+  async function loadAuditLog() {
+    const el = document.getElementById('audit-log-list');
+    try {
+      const res = await fetch(`${SERVER}/api/audit-log?limit=30`);
+      const entries = await res.json();
+      if (entries.length === 0) {
+        el.innerHTML = `<div style="color:var(--muted);font-size:0.82em;text-align:center;padding:12px">No audit events yet.</div>`;
+        return;
+      }
+      const eventIcon = { repo_accepted:'✅', repo_partial:'⚡', repo_quarantined:'🔶', repo_rejected:'❌',
+        gap_detected:'🔍', skill_staged:'✨', skill_promoted:'🚀', skill_discarded:'🗑', skill_rolled_back:'⏪',
+        bot_upgraded:'⬆', mutation_win:'🏆', mutation_rollback:'⏪', intents_tagged:'🏷' };
+      el.innerHTML = entries.map(e => `
+        <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:8px 10px;border-left:2px solid rgba(99,102,241,0.3)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:0.8em;color:var(--text)">${eventIcon[e.event]||'•'} ${e.event.replace(/_/g,' ')}</span>
+            <span style="font-size:0.65em;color:var(--muted)">${new Date(e.ts).toLocaleTimeString()}</span>
+          </div>
+          ${e.tag ? `<div style="font-size:0.7em;color:var(--accent2)">${e.tag}</div>` : ''}
+          ${e.repo ? `<div style="font-size:0.7em;color:var(--muted)">${e.repo}</div>` : ''}
+        </div>`).join('');
+    } catch(e) {
+      el.innerHTML = `<div style="color:var(--red);font-size:0.82em">Error loading audit log</div>`;
+    }
+  }
+
+
+  // ── WebSocket Connection ──────────────────────────────────────────────────
+  let socket = null;
+  function connectSocket() {
+    if (socket) { socket.disconnect(); socket = null; }
+    
+    socket = io(SERVER, {
+      withCredentials: true,
+      extraHeaders: {
+        "ngrok-skip-browser-warning": "true"
+      }
+    });
+
+    socket.on('connect', () => {
+      setBadge(true);
+      appendLog('Connected to Pavi ✅', 'green');
+    });
+
+    socket.on('disconnect', () => {
+      setBadge(false);
+      appendLog('Connection lost. Retrying...', 'red');
+    });
+
+    // Listen to events that handleSSE expects
+    socket.on('session', (data) => {
+      handleSSE({ type: 'session', data });
+    });
+    socket.on('log', (data) => {
+      handleSSE({ type: 'log', data });
+    });
+    socket.on('context_note', (data) => {
+      handleSSE({ type: 'context_note', data });
+    });
+    socket.on('queue_update', (data) => {
+      handleSSE({ type: 'queue_update', data });
+    });
+    socket.on('ingest_progress', (data) => {
+      handleSSE({ type: 'ingest_progress', data });
+    });
+    socket.on('ingest_done', (data) => {
+      handleSSE({ type: 'ingest_done', data });
+    });
+    socket.on('swarm_result', (data) => {
+      handleSSE({ type: 'swarm_result', data });
+    });
+    socket.on('pending_change_added', (data) => {
+      handleSSE({ type: 'pending_change_added', data });
+    });
+    socket.on('pending_changes_update', (data) => {
+      handleSSE({ type: 'pending_changes_update', data });
+    });
+    socket.on('error', (data) => {
+      handleSSE({ type: 'error', data });
+    });
+  }
+
+  // Reconnect immediately when user returns to the browser tab
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && (!socket || !socket.connected)) {
+      connectSocket();
+    }
+  });
+
+  function handleSSE(msg) {
+    switch(msg.type) {
+      case 'connected':
+        const s = msg.data?.session;
+        if (s) { applySession(s); }
+        break;
+      case 'session':
+        applySession(msg.data);
+        break;
+      case 'log':
+        if (msg.data?.line) appendLog(msg.data.line);
+        break;
+      case 'context_note':
+        showDesktopNote(msg.data);
+        break;
+      case 'queue_update':
+        renderQueue(msg.data.queue, msg.data.activeJob);
+        break;
+      case 'ingest_progress':
+        updateActiveJobProgress(msg.data);
+        break;
+      case 'ingest_done':
+        completedJobs.unshift(msg.data);
+        renderQueue(window.lastQueue || [], window.lastActiveJob); // re-render to show completed
+        appendLog(`✅ Ingest complete: ${msg.data.owner}/${msg.data.repo} (${msg.data.ingested} files)`, 'green');
+        break;
+      case 'swarm_result':
+        if (msg.data?.result) {
+          showDesktopNote({ note: '🐝 Swarm Result:\n' + msg.data.result, ts: Date.now() });
+        }
+        break;
+      case 'pending_change_added':
+      case 'pending_changes_update':
+        loadIntelligence();
+        break;
+      case 'error':
+        appendLog(`❌ Error: ${msg.data?.message}`, 'red');
+        break;
+    }
+  }
+
+  // ── Session State ───────────────────────────────────────────────────────
+  function applySession(s) {
+    if (s.selectedFolder !== undefined) {
+      document.getElementById('folder-name').textContent = s.selectedFolder
+        ? s.selectedFolder.replace(/\\/g, '/').split('/').pop() + '  (' + s.selectedFolder + ')'
+        : 'Not selected yet';
+    }
+    if (s.status) {
+      const chip = document.getElementById('status-chip');
+      chip.textContent = s.status;
+      chip.className = `status-chip ${s.status}`;
+    }
+    if (s.currentTask !== undefined) {
+      document.getElementById('current-task-text').textContent = s.currentTask || '';
+    }
+    if (s.logs) {
+      s.logs.forEach(l => appendLog(l.line));
+    }
+    if (s.contextNotes) {
+      s.contextNotes.forEach(n => showDesktopNote(n, false));
+    }
+  }
+
+  // ── Live Log ────────────────────────────────────────────────────────────
+  const MAX_LOGS = 80;
+  function appendLog(line, cls = '') {
+    if (!line) return;
+    const feed = document.getElementById('log-feed');
+    // Auto-color based on prefix
+    if (!cls) {
+      if (line.includes('✅') || line.includes('[OK]') || line.includes('Success')) cls = 'green';
+      else if (line.includes('⚠️') || line.includes('[WARN]')) cls = 'amber';
+      else if (line.includes('❌') || line.includes('[ERROR]') || line.includes('FAIL')) cls = 'red';
+      else if (line.includes('[PAVI]') || line.includes('[ARENA]') || line.includes('[GITHUB]')) cls = 'accent';
+    }
+    const el = document.createElement('div');
+    el.className = `log-line${cls ? ' ' + cls : ''}`;
+    el.textContent = `${new Date().toLocaleTimeString()} ${line}`;
+    feed.appendChild(el);
+    // Trim to max
+    while (feed.children.length > MAX_LOGS) feed.removeChild(feed.firstChild);
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  // ── Queue Rendering ─────────────────────────────────────────────────────
+  function parseGH(job) {
+    // DB rows only have url, not owner/repo. Parse them from the URL.
+    const m = (job.url || '').match(/github\.com\/([^/]+)\/([^/\s?#]+)/);
+    return {
+      owner: job.owner || (m ? m[1] : 'unknown'),
+      repo:  job.repo  || (m ? m[2].replace(/\.git$/, '') : 'unknown')
+    };
+  }
+
+  function renderQueue(queue, activeJob) {
+    window.lastQueue = queue;
+    window.lastActiveJob = activeJob;
+
+    const runningSec = document.getElementById('queue-running-section');
+    const runningList = document.getElementById('queue-running-list');
+    const queuedSec = document.getElementById('queue-queued-section');
+    const queuedList = document.getElementById('queue-queued-list');
+    const completedSec = document.getElementById('queue-completed-section');
+    const completedList = document.getElementById('queue-completed-list');
+    const emptyMsg = document.getElementById('queue-empty');
+
+    const badgeCount = queue.filter(j => j.status === 'pending').length + (activeJob ? 1 : 0);
+    const badge = document.getElementById('queue-badge');
+    badge.textContent = badgeCount;
+    if (badgeCount > 0) badge.classList.add('show');
+    else badge.classList.remove('show');
+
+    let isEmpty = true;
+
+    if (activeJob) {
+      isEmpty = false;
+      const gh = parseGH(activeJob);
+      runningSec.style.display = 'block';
+      runningList.innerHTML = `
+        <div class="list-item">
+          <div class="item-icon running">↻</div>
+          <div class="item-details">
+            <div class="item-title">${activeJob.label || gh.repo}</div>
+            <div class="item-sub">github.com/${gh.owner}/${gh.repo}</div>
+            <div class="progress-bar-bg" style="margin: 6px 0; height: 4px;"><div class="progress-bar-fill" id="active-job-bar" style="width: 5%"></div></div>
+            <div class="item-meta">
+              <span id="active-job-files" style="color:var(--muted)">Starting...</span>
+              <span class="status-badge running">running</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      runningSec.style.display = 'none';
+      runningList.innerHTML = '';
+    }
+
+    const pendingJobs = queue.filter(j => j.status === 'pending');
+    if (pendingJobs.length > 0) {
+      isEmpty = false;
+      queuedSec.style.display = 'block';
+      queuedList.innerHTML = pendingJobs.map((job, idx) => {
+        const gh = parseGH(job);
+        return `
+        <div class="list-item">
+          <div class="item-icon queued">⏳</div>
+          <div class="item-details">
+            <div class="item-title">${job.label || gh.repo}</div>
+            <div class="item-sub">github.com/${gh.owner}/${gh.repo}</div>
+            <div class="item-meta">
+              <span style="color:var(--muted)">position ${idx + 1} of ${pendingJobs.length}</span>
+              <span class="status-badge queued">waiting</span>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    } else {
+      queuedSec.style.display = 'none';
+      queuedList.innerHTML = '';
+    }
+
+
+    // 3. Completed / Failed
+    const finishedJobs = queue.filter(j => j.status === 'done' || j.status === 'failed').reverse().slice(0, 10);
+    if (finishedJobs.length > 0) {
+      isEmpty = false;
+      completedSec.style.display = 'block';
+      completedList.innerHTML = finishedJobs.map(job => {
+        const gh = parseGH(job);
+        return `
+        <div class="list-item">
+          <div class="item-icon ${job.status}">${job.status === 'done' ? '✅' : '❌'}</div>
+          <div class="item-details">
+            <div class="item-title">${job.label || gh.repo}</div>
+            <div class="item-sub">github.com/${gh.owner}/${gh.repo}</div>
+            <div class="item-meta">
+              <span style="color:var(--muted)">${job.status === 'done' ? 'Success' : 'Failed'}</span>
+              <span class="status-badge ${job.status}">${job.status}</span>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    } else {
+      completedSec.style.display = 'none';
+      completedList.innerHTML = '';
+    }
+
+    emptyMsg.style.display = isEmpty ? 'block' : 'none';
+  }
+
+  function updateActiveJobProgress(data) {
+    const bar = document.getElementById('active-job-bar');
+    const files = document.getElementById('active-job-files');
+    if (bar && files) {
+      const pct = data.total > 0 ? Math.round((data.done / data.total) * 100) : 5;
+      bar.style.width = Math.max(5, pct) + '%';
+      files.textContent = `${data.done} / ${data.total} files`;
+    }
+  }
+
+  // ── GitHub Ingest ───────────────────────────────────────────────────────
+  async function startGithubIngest(forceFlush = false) {
+    const urlInput = document.getElementById('gh-url');
+    const labelInput = document.getElementById('gh-label');
+    const branchInput = document.getElementById('gh-branch');
+    const btn = document.getElementById('gh-ingest-btn');
+    const result = document.getElementById('gh-result');
+    
+    const url = urlInput.value.trim();
+    if (!url) { urlInput.focus(); return; }
+    if (!url.includes('github.com')) {
+      result.style.display = 'block';
+      result.style.background = 'rgba(239,68,68,0.1)';
+      result.style.color = '#ef4444';
+      result.textContent = '⚠️ Please enter a valid GitHub URL';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Adding...';
+
+    try {
+      const res = await fetch(`${SERVER}/api/queue/github-ingest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          url, 
+          label: labelInput ? labelInput.value.trim() : '',
+          branch: branchInput ? branchInput.value.trim() : '',
+          forceFlush
+        })
+      });
+
+      if (res.ok) {
+        urlInput.value = '';
+        if (labelInput) labelInput.value = '';
+        if (branchInput) branchInput.value = '';
+        result.style.display = 'block';
+        result.style.background = 'rgba(16,185,129,0.12)';
+        result.style.color = '#10b981';
+        result.textContent = '✅ Added to queue';
+        switchTab('queue');
+        setTimeout(() => { result.style.display = 'none'; }, 3000);
+      } else {
+        throw new Error(await res.text());
+      }
+    } catch(e) {
+      result.style.display = 'block';
+      result.style.background = 'rgba(239,68,68,0.1)';
+      result.style.color = '#ef4444';
+      result.textContent = `❌ ${e.message}`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🚀 Add to Queue';
+    }
+  }
+
+  // ── Repo Stats ──────────────────────────────────────────────────────────
+  async function loadRepoStats() {
+    const list = document.getElementById('repos-list');
+    try {
+      const res = await fetch(`${SERVER}/api/repo-stats`);
+      const stats = await res.json();
+      const keys = Object.keys(stats);
+      
+      if (keys.length === 0) {
+        list.innerHTML = `<div style="text-align:center; padding: 40px 20px; color: var(--muted); font-size: 0.9em;">No repos learned yet.</div>`;
+        return;
+      }
+
+      list.innerHTML = keys.map(k => {
+        const repo = stats[k];
+        const isUpgraded = repo.upgradedAt ? 'upgraded' : '';
+        const name = k.replace('github.com/', '');
+        return `
+          <div class="list-item" style="flex-direction: column; gap: 8px;">
+            <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+              <div class="item-title" style="font-size:1.05em; color:var(--accent2);">${name}</div>
+              <span class="status-badge ${isUpgraded ? 'upgraded' : 'queued'}">${isUpgraded ? 'upgraded' : 'not upgraded'}</span>
+            </div>
+            <div style="font-size:0.8em; color:var(--muted); display:flex; gap:12px; margin-bottom:4px;">
+              <span>📁 ${repo.files || 0} files</span>
+              <span>🎯 ${repo.hits || 0} hits</span>
+            </div>
+            <button class="btn" style="background:rgba(255,255,255,0.1); color:white; padding: 8px; font-size:0.8em;" onclick="reIngest('${k}')">
+              ↻ Re-ingest (Flush Cache)
+            </button>
+          </div>
+        `;
+      }).join('');
+    } catch(e) {
+      list.innerHTML = `<div style="color:var(--red); padding: 20px;">Failed to load repos</div>`;
+    }
+  }
+
+  function reIngest(repoKey) {
+    document.getElementById('gh-url').value = `https://${repoKey}`;
+    switchTab('ingest');
+    startGithubIngest(true);
+  }
+
+  // ── IndexedDB Offline Notes Support ─────────────────────────────────────
+  let dbInstance = null;
+  const request = indexedDB.open('PaviOfflineNotes', 1);
+  request.onupgradeneeded = (e) => {
+    const db = e.target.result;
+    if (!db.objectStoreNames.contains('notes')) {
+      db.createObjectStore('notes', { autoIncrement: true });
+    }
+  };
+  request.onsuccess = (e) => {
+    dbInstance = e.target.result;
+    window.addEventListener('online', syncOfflineNotes);
+  };
+
+  async function saveNoteOffline(note) {
+    if (!dbInstance) return false;
+    return new Promise((resolve, reject) => {
+      const transaction = dbInstance.transaction(['notes'], 'readwrite');
+      const store = transaction.objectStore('notes');
+      const addReq = store.add({ note, ts: Date.now() });
+      addReq.onsuccess = () => resolve(true);
+      addReq.onerror = () => reject(new Error('Failed to save offline'));
+    });
+  }
+
+  async function syncOfflineNotes() {
+    if (!navigator.onLine || !dbInstance) return;
+    const transaction = dbInstance.transaction(['notes'], 'readonly');
+    const store = transaction.objectStore('notes');
+    const getReq = store.getAll();
+    
+    getReq.onsuccess = async () => {
+      const offlineNotes = getReq.result;
+      if (offlineNotes.length === 0) return;
+      
+      appendLog(`📡 Syncing ${offlineNotes.length} offline notes...`, 'accent');
+      
+      for (const item of offlineNotes) {
+        try {
+          const res = await fetch('/api/session/note', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ note: item.note })
+          });
+          if (res.ok) {
+            appendLog(`✅ Offline note synced: ${item.note.slice(0, 30)}...`, 'green');
+          }
+        } catch (e) {
+          console.error('[SYNC] Failed syncing:', e.message);
+        }
+      }
+      
+      const writeTrans = dbInstance.transaction(['notes'], 'readwrite');
+      const writeStore = writeTrans.objectStore('notes');
+      writeStore.clear();
+    };
+  }
+
+  // ── Context Note ────────────────────────────────────────────────────────
+  async function sendNote() {
+    const textarea = document.getElementById('context-note');
+    const note = textarea.value.trim();
+    if (!note) { textarea.focus(); return; }
+
+    if (!navigator.onLine) {
+      try {
+        await saveNoteOffline(note);
+        textarea.value = '';
+        appendLog(`💾 Saved offline. Will sync when connection is restored.`, 'amber');
+        const indicator = document.getElementById('note-saved-indicator');
+        indicator.textContent = '💾 Saved offline!';
+        indicator.style.display = 'block';
+        setTimeout(() => { indicator.style.display = 'none'; }, 2500);
+      } catch (e) {
+        appendLog(`❌ Could not save note offline: ${e.message}`, 'red');
+      }
+      return;
+    }
+
+    try {
+      const res = await fetch(`${SERVER}/api/session/note`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note })
+      });
+      if (res.ok) {
+        textarea.value = '';
+        const indicator = document.getElementById('note-saved-indicator');
+        indicator.textContent = '✅ Saved to laptop!';
+        indicator.style.display = 'block';
+        appendLog(`📝 Context sent to laptop: ${note.slice(0, 50)}`, 'green');
+        setTimeout(() => { indicator.style.display = 'none'; }, 2500);
+      }
+    } catch(e) {
+      appendLog(`❌ Could not send note: ${e.message}`, 'red');
+    }
+  }
+
+  // ── Desktop Notes Display ───────────────────────────────────────────────
+  function showDesktopNote(entry, animate = true) {
+    const card = document.getElementById('notes-card');
+    const list = document.getElementById('notes-list');
+    card.style.display = 'block';
+    const el = document.createElement('div');
+    el.className = 'note-item';
+    const t = new Date(entry.ts || Date.now()).toLocaleTimeString();
+    el.innerHTML = `<div>${entry.note}</div><div class="note-time">${t}</div>`;
+    if (animate) el.style.animation = 'fadeSlide 0.3s ease';
+    list.appendChild(el);
+    list.scrollTop = list.scrollHeight;
+  }
+
+  // ── Connection Badge ────────────────────────────────────────────────────
+  function setBadge(connected) {
+    const badge = document.getElementById('conn-badge');
+    const txt = document.getElementById('conn-text');
+    if (connected) {
+      badge.className = '';
+      txt.textContent = 'Live';
+    } else {
+      badge.className = 'disconnected';
+      txt.textContent = 'Offline';
+    }
+  }
+
+  async function resetFailedJobs() {
+    if (!confirm('Retry all failed ingestion jobs?')) return;
+    try {
+      const res = await fetch('/api/queue/reset', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        appendLog(`[OK] Reset ${data.resetCount} failed jobs.`, 'green');
+      }
+    } catch (e) {
+      appendLog(`[ERROR] Failed to reset queue: ${e.message}`, 'red');
+    }
+  }
+
+  async function clearQueue() {
+    if (!confirm('Are you sure you want to clear the entire queue history?')) return;
+    try {
+      const res = await fetch('/api/queue/clear', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        appendLog(`[OK] Cleared all ${data.clearedCount} jobs.`, 'green');
+        renderQueue([], null);
+      }
+    } catch (e) {
+      appendLog(`[ERROR] Failed to clear queue: ${e.message}`, 'red');
+    }
+  }
+
+  // ── Swarm Management ────────────────────────────────────────────────────
+  async function loadActiveSwarmStatus() {
+    const container = document.getElementById('active-swarm-container');
+    const cancelBtn = document.getElementById('cancel-swarm-btn');
+    if (!container) return;
+    try {
+      const res = await fetch('/api/swarm/status');
+      const data = await res.json();
+      if (data.success) {
+        const running = data.runningRuns || [];
+        if (running.length === 0) {
+          container.innerHTML = `
+            <div style="text-align:center; padding: 20px; color: var(--muted); font-size: 0.9em;">
+              No active swarm sessions currently running.
+            </div>
+          `;
+          cancelBtn.style.display = 'none';
+        } else {
+          container.innerHTML = running.map(run => {
+            const agents = JSON.parse(run.agents_used || '[]');
+            return `
+              <div style="background:rgba(99,102,241,0.05); border:1px solid var(--accent); border-radius:12px; padding:14px; margin-bottom:10px;">
+                <div style="font-weight:600; font-size:0.92em; color:var(--text); margin-bottom:6px;">${run.prompt}</div>
+                <div style="display:flex; justify-content:space-between; font-size:0.78em; color:var(--muted); margin-bottom:10px;">
+                  <span>🐝 Active Swarm ID: <strong>${run.id}</strong></span>
+                  <span class="status-badge running" style="padding: 2px 6px;">RUNNING</span>
+                </div>
+                <div style="font-size:0.75em; color:var(--accent2); line-height:1.4;">
+                  <strong>Agents:</strong> ${agents.join(', ')}
+                </div>
+              </div>
+            `;
+          }).join('');
+          cancelBtn.style.display = 'block';
+        }
+      }
+    } catch (e) {
+      container.innerHTML = `<div style="color:var(--red); padding: 12px;">Failed to load active swarm status</div>`;
+    }
+  }
+
+  async function cancelActiveSwarm() {
+    if (!confirm('Are you sure you want to terminate the active swarm session? This will force-stop the running agents.')) return;
+    try {
+      const res = await fetch('/api/swarm/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+      const data = await res.json();
+      if (data.success) {
+        appendLog(`🛑 Swarm session cancelled by mobile user.`, 'red');
+        loadActiveSwarmStatus();
+      } else {
+        alert(data.error || 'Failed to cancel swarm session.');
+      }
+    } catch (e) {
+      alert(`Error cancelling swarm: ${e.message}`);
+    }
+  }
+
+  // ── CI/CD Pipeline Management ───────────────────────────────────────────
+  async function loadCICDJobs() {
+    const container = document.getElementById('cicd-jobs-list');
+    if (!container) return;
+    try {
+      container.innerHTML = '<div style="color:var(--muted);font-size:0.82em;text-align:center;padding:16px">Loading pipeline...</div>';
+      const res = await fetch('/api/phase-d/jobs');
+      const data = await res.json();
+      if (data.success) {
+        const jobs = data.jobs || [];
+        if (jobs.length === 0) {
+          container.innerHTML = `
+            <div style="text-align:center; padding: 20px; color: var(--muted); font-size: 0.9em;">
+              No CI/CD pipeline history available.
+            </div>
+          `;
+        } else {
+          container.innerHTML = jobs.map(job => {
+            const statusClass = job.status === 'done' || job.status === 'completed' ? 'done' : (job.status === 'failed' ? 'red' : 'running');
+            const statusText = job.status.toUpperCase();
+            const dateStr = new Date(job.created_at).toLocaleString();
+            
+            let details = '';
+            if (job.resultData && job.resultData.error) {
+              details = `<div style="color:var(--red); font-size:0.75em; margin-top:8px; font-family:monospace; background:rgba(239,68,68,0.05); padding:6px; border-radius:4px;">Error: ${job.resultData.error}</div>`;
+            } else if (job.resultData && job.resultData.success) {
+              details = `<div style="color:var(--green); font-size:0.75em; margin-top:8px; font-family:monospace; background:rgba(16,185,129,0.05); padding:6px; border-radius:4px;">Pipeline passed successfully.</div>`;
+            }
+            
+            return `
+              <div class="list-item" style="flex-direction:column; gap:8px;">
+                <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                  <div class="item-title" style="font-size:0.92em; color:var(--text)">Job #${job.id.slice(0, 8)}</div>
+                  <span class="status-badge ${statusClass}">${statusText}</span>
+                </div>
+                <div style="font-size:0.78em; color:var(--muted); display:flex; flex-direction:column; gap:4px; width:100%;">
+                  <div>Issue Number: <strong>${job.issue_number}</strong></div>
+                  <div>Payload Event: <strong>${job.payload.action || 'push'}</strong></div>
+                  <div style="font-size:0.85em; color:var(--muted); margin-top:4px;">${dateStr}</div>
+                </div>
+                ${details}
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    } catch (e) {
+      container.innerHTML = `<div style="color:var(--red); padding:16px;">Failed to load CI/CD jobs.</div>`;
+    }
+  }
+
+  // ── Push Notifications Setup ────────────────────────────────────────────
+  async function setupPushNotifications(reg) {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        console.warn('[PUSH] Notification permission denied');
+        return;
+      }
+
+      const keyRes = await fetch('/api/push/vapid-public-key');
+      if (!keyRes.ok) throw new Error('VAPID key fetch failed');
+      const { publicKey } = await keyRes.json();
+
+      const padding = '='.repeat((4 - publicKey.length % 4) % 4);
+      const base64 = (publicKey + padding).replace(/\-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: outputArray
+      });
+
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub)
+      });
+      console.log('[PUSH] Successfully subscribed to notifications');
+    } catch (e) {
+      console.warn('[PUSH] Subscription process failed:', e.message);
+    }
+  }
+
+  // ── PWA Installation Guides ─────────────────────────────────────────────
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const banner = document.getElementById('android-pwa-banner');
+    if (banner) banner.style.display = 'block';
+  });
+
+  window.triggerPwaInstall = async function() {
+    const banner = document.getElementById('android-pwa-banner');
+    if (banner) banner.style.display = 'none';
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`[PWA] User response to the install prompt: ${outcome}`);
+    deferredPrompt = null;
+  };
+
+  window.closeAndroidBanner = function() {
+    const banner = document.getElementById('android-pwa-banner');
+    if (banner) banner.style.display = 'none';
+  };
+
+  window.closeIosBanner = function() {
+    const banner = document.getElementById('ios-pwa-banner');
+    if (banner) banner.style.display = 'none';
+  };
+
+  // ── Enter key and service worker init ──────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('context-note').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.ctrlKey) sendNote();
+    });
+    connectSocket();
+
+    // Register SW
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/pwa/sw.js')
+          .then(reg => {
+            console.log('[SW] Service Worker registered:', reg.scope);
+            setupPushNotifications(reg);
+          })
+          .catch(err => console.error('[SW] Registration failed:', err));
+      });
+    }
+
+    // iOS guide banner
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+    if (isIos && !isStandalone) {
+      document.getElementById('ios-pwa-banner').style.display = 'block';
+    }
+  });
+</script>
+
+<!-- Android/Desktop Install Guide Banner -->
+<div id="android-pwa-banner" class="card" style="display:none; position:fixed; bottom:20px; left:20px; right:20px; z-index:1000; background:rgba(30,41,59,0.95); border:1px solid var(--accent); box-shadow:0 10px 30px rgba(0,0,0,0.5); animation: fadeSlide 0.4s ease;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+    <div style="font-weight:700; color:var(--accent2); font-size:0.9em;">✨ Install Pavi Web App</div>
+    <button onclick="closeAndroidBanner()" style="background:none; border:none; color:var(--muted); font-size:1.2em; cursor:pointer;">&times;</button>
+  </div>
+  <p style="font-size:0.8em; color:var(--text); line-height:1.4; margin-bottom:10px;">
+    Get the full standalone Pavi app experience directly from your home screen.
+  </p>
+  <button class="btn btn-primary" style="padding:10px; font-size:0.82em;" onclick="triggerPwaInstall()">🚀 Install Now</button>
+</div>
+
+<!-- iOS Install Guide Banner -->
+<div id="ios-pwa-banner" class="card" style="display:none; position:fixed; bottom:20px; left:20px; right:20px; z-index:1000; background:rgba(30,41,59,0.95); border:1px solid var(--accent); box-shadow:0 10px 30px rgba(0,0,0,0.5); animation: fadeSlide 0.4s ease;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+    <div style="font-weight:700; color:var(--accent2); font-size:0.9em;">✨ Install Pavi on iPhone / iPad</div>
+    <button onclick="closeIosBanner()" style="background:none; border:none; color:var(--muted); font-size:1.2em; cursor:pointer;">&times;</button>
+  </div>
+  <p style="font-size:0.8em; color:var(--text); line-height:1.4;">
+    To install Pavi Mobile for an offline-enabled app experience, tap the <strong>Share</strong> button <span style="font-size:1.1em; vertical-align:middle;">⎋</span> at the bottom of Safari, scroll down, and select <strong>Add to Home Screen</strong>.
+  </p>
+</div>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "workerOutput": "",
+  "critique": "REJECTED: The task summary is incomplete and lacks essential details. To resubmit, please provide a detailed description of the task, including the objectives, steps taken, and any relevant code or configurations. Additionally, include a thorough explanation of the errors encountered, such as error messages, stack traces, and any troubleshooting steps taken. This will enable a comprehensive review and allow for effective debugging and resolution of the issues.",
+  "originalPrompt": "Implement this new feature into our own dashboard codebase: Implement a Comprehensive Code Review and Analysis Module to identify design patterns, algorithms, key functions, dependencies, and error handling strategies, providing a thorough understanding of the codebase and revealing optimization opportunities.. You are upgrading yourself. Be extremely careful not to break existing functionality. Use replaceFileContent and runCommand.",
+  "fileName": "reject_1779288054800.json"
+}
