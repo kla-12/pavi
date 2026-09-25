@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let sseInstance = null;
   let rateSummaryInterval = null;
 
-  const initializeDashboardComponents = () => {
+  function initializeDashboardComponents() {
       if (dashboardInitialized) return;
       dashboardInitialized = true;
       
@@ -59,8 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
               const data = await res.json();
               const components = data.components || {};
               for (const [key, info] of Object.entries(components)) {
-                  const dot = document.getElementById(`dot-${key}`);
-                  const detail = document.getElementById(`detail-${key}`);
+                  const targetKey = key === 'database' ? 'db' : key;
+                  const dot = document.getElementById(`dot-${targetKey}`);
+                  const detail = document.getElementById(`detail-${targetKey}`);
                   if (dot) {
                       dot.className = `health-dot ${info.status}`;
                   }
@@ -113,11 +114,9 @@ document.addEventListener('DOMContentLoaded', () => {
           } catch (e) { /* non-critical */ }
       };
 
-      // Defer health check so it doesn't compete with critical UI loads
-      setTimeout(() => {
-          loadHealthStatus();
-          setInterval(loadHealthStatus, 60_000);
-      }, 2000); // 2-second delay — lets session, workspaces, and models load first
+      // Load health immediately and poll every 30 seconds
+      loadHealthStatus();
+      setInterval(loadHealthStatus, 30_000);
 
       document.getElementById('refresh-health-btn')?.addEventListener('click', loadHealthStatus);
 
@@ -148,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Premium Connection Offline Overlay
-  const showOfflineOverlay = () => {
+  function showOfflineOverlay() {
       let offlineOverlay = document.getElementById('offline-overlay');
       if (!offlineOverlay) {
           offlineOverlay = document.createElement('div');
@@ -181,14 +180,14 @@ document.addEventListener('DOMContentLoaded', () => {
               }, 600);
           });
       }
-  };
+  }
 
   // Verify Auth Session status (Auth disabled - always active)
-  const checkSessionStatus = async () => {
+  async function checkSessionStatus() {
       const loginOverlay = document.getElementById('login-overlay');
       if (loginOverlay) loginOverlay.style.display = 'none';
       initializeDashboardComponents();
-  };
+  }
 
   // Hook Login and registration form submission
   const loginForm = document.getElementById('login-form');
@@ -265,11 +264,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }
 
-  // Trigger initial auth session check
-  checkSessionStatus();
-
   // Load saved Orchestrator Config from Backend
-  const loadConfig = async () => {
+  async function loadConfig() {
       try {
           const res = await fetch('/api/config');
           if (res.ok) {
@@ -326,38 +322,42 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (e) {
           console.error("Failed to fetch backend config", e);
       }
-  };
+  }
   // loadConfig is initialized by checkSessionStatus
 
   // Load local Ollama models
-  const loadLocalModels = async () => {
+  async function loadLocalModels() {
+      const select = document.getElementById('local-model-select');
       try {
           const res = await fetch('/api/models');
-          if (!res.ok) return;
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const data = await res.json();
-          const select = document.getElementById('local-model-select');
-          if (!select || !data.models) return;
+          if (!select) return;
           
-          if (data.models.length === 0) {
-              select.innerHTML = '<option value="">No models found</option>';
+          const models = data.models || [];
+          if (models.length === 0) {
+              select.innerHTML = '<option value="phi3:mini">phi3:mini (Default)</option>';
+              select.value = 'phi3:mini';
               return;
           }
 
-          select.innerHTML = data.models.map(m => {
+          select.innerHTML = models.map(m => {
               const name = typeof m === 'string' ? m : (m.name || '');
               return `<option value="${name}">${name}</option>`;
           }).join('');
           
-          const activeModel = data.selected_model || data.activeModel;
+          const activeModel = data.selected_model || data.activeModel || (models[0] && typeof models[0] === 'string' ? models[0] : models[0]?.name);
           if (activeModel) {
               select.value = activeModel;
           }
       } catch (e) {
           console.warn('[MODELS] Failed to load local models:', e.message);
-          const select = document.getElementById('local-model-select');
-          if (select) select.innerHTML = '<option value="">Ollama Offline</option>';
+          if (select) {
+              select.innerHTML = '<option value="phi3:mini">phi3:mini (Default)</option>';
+              select.value = 'phi3:mini';
+          }
       }
-  };
+  }
 
   const modelSelectElement = document.getElementById('local-model-select');
   if (modelSelectElement) {
@@ -377,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Pavi Evolution: Rate Summary Widget ─────────────────────────────────────
   // Polls /api/rate-summary every 30s and renders a live key-health panel
-  const loadRateSummary = async () => {
+  async function loadRateSummary() {
       try {
           const res = await fetch('/api/rate-summary');
           if (!res.ok) return;
@@ -490,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
   };
 
-  const initMobileConnect = async () => {
+  async function initMobileConnect() {
       try {
           // Show loading state while resolving URL
           const qrContainer = document.getElementById('qrcode-container');
@@ -3486,6 +3486,9 @@ document.addEventListener('DOMContentLoaded', () => {
           }
       });
   }
+
+  // Trigger initial session check & dashboard initialization
+  checkSessionStatus();
 
 });
 
