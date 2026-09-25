@@ -228,48 +228,94 @@ router.post('/clarify', async (req, res) => {
 // POST /api/plan
 router.post('/plan', async (req, res) => {
     try {
-        const { prompt, apiUrl, apiModel, apiKeys } = req.body;
-        if (!prompt || !apiUrl || !apiKeys || apiKeys.length === 0) {
-            return res.status(400).json({ error: 'Missing prompt or API credentials' });
+        let { prompt, apiUrl, apiModel, apiKeys, reviewerUrl, reviewerModel, reviewerKeys } = req.body;
+        if (!prompt) {
+            return res.status(400).json({ error: 'Missing prompt' });
         }
+
+        const groqKey = process.env.GROQ_API_KEY || (reviewerKeys && reviewerKeys[0]) || (apiKeys && apiKeys[0] && apiKeys[0] !== 'local_mode' ? apiKeys[0] : null);
 
         const systemPrompt = "You are a senior technical architect. Before the worker writes code, generate a high-level markdown checklist of the implementation plan based on the user's request. Keep it concise. Do not write code. Just outline the steps to take.";
-        const payload = {
-            model: apiModel || "gpt-3.5-turbo",
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: prompt }
-            ],
-            max_tokens: 800
-        };
-
-        let response;
-        let success = false;
         
-        for (let i = 0; i < apiKeys.length; i++) {
-            const key = apiKeys[i];
-            response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-                body: JSON.stringify(payload)
-            });
-            
-            if (response.status === 429 && i < apiKeys.length - 1) {
-                continue;
-            }
-            if (response.ok) {
-                success = true;
-                break;
+        let planText = null;
+        let usedFallback = false;
+
+        // Try primary worker API first if not skipping local in production
+        const isLocalUrl = apiUrl && (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1'));
+        const skipLocal = isLocalUrl && process.env.NODE_ENV === 'production';
+
+        if (apiUrl && apiKeys && apiKeys.length > 0 && !skipLocal) {
+            try {
+                const payload = {
+                    model: apiModel || "llama-3.1-8b-instant",
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: prompt }
+                    ],
+                    max_tokens: 800
+                };
+                for (let i = 0; i < apiKeys.length; i++) {
+                    const key = apiKeys[i];
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+                        body: JSON.stringify(payload),
+                        signal: AbortSignal.timeout(10000)
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        planText = data.choices ? data.choices[0].message.content : (data.response || null);
+                        if (planText) break;
+                    }
+                }
+            } catch (err) {
+                logger.warn('[PLAN] Primary apiUrl failed, falling back to reviewer/Groq:', err.message);
             }
         }
 
-        if (!success || !response.ok) throw new Error(`API Error: ${response ? response.status : 'unknown'}`);
-        
-        const data = await response.json();
-        let planText = data.choices ? data.choices[0].message.content : (data.response || "No plan generated.");
-        
-        res.json({ plan: planText });
+        // Fallback to Reviewer (Groq Cloud) API
+        if (!planText && (reviewerUrl || groqKey)) {
+            const fallbackUrl = reviewerUrl || 'https://api.groq.com/openai/v1/chat/completions';
+            const fallbackModel = reviewerModel || 'llama-3.3-70b-versatile';
+            const fallbackKeys = (reviewerKeys && reviewerKeys.length > 0) ? reviewerKeys : [groqKey];
+
+            for (const key of fallbackKeys) {
+                if (!key || key === 'local_mode') continue;
+                try {
+                    const response = await fetch(fallbackUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+                        body: JSON.stringify({
+                            model: fallbackModel,
+                            messages: [
+                                { role: "system", content: systemPrompt },
+                                { role: "user", content: prompt }
+                            ],
+                            max_tokens: 800
+                        }),
+                        signal: AbortSignal.timeout(15000)
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        planText = data.choices ? data.choices[0].message.content : (data.response || null);
+                        if (planText) {
+                            usedFallback = true;
+                            break;
+                        }
+                    }
+                } catch (err) {
+                    logger.warn('[PLAN] Reviewer fallback failed:', err.message);
+                }
+            }
+        }
+
+        if (!planText) {
+            throw new Error('Could not reach AI engine. Please configure your Groq API key in Settings.');
+        }
+
+        res.json({ plan: planText, usedFallback });
     } catch (e) {
+        logger.error('[PLAN] Error:', e.message);
         res.status(500).json({ error: e.message });
     }
 });

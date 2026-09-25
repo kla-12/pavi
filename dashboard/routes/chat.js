@@ -621,13 +621,25 @@ router.post('/orchestrate', async (req, res) => {
             try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch (e) {}
         }
         
-        const finalWorkerUrl = workerUrl || config.workerUrl || process.env.WORKER_URL || 'http://localhost:11434/v1/chat/completions';
-        const finalWorkerModel = workerModel || config.workerModel || 'phi3:mini';
-        const finalWorkerKeys = workerKeys || config.workerKeys || [config.apiKey || ''];
+        let finalWorkerUrl = workerUrl || config.workerUrl || process.env.WORKER_URL || 'http://localhost:11434/v1/chat/completions';
+        let finalWorkerModel = workerModel || config.workerModel || 'phi3:mini';
+        let finalWorkerKeys = workerKeys || config.workerKeys || [config.apiKey || ''];
         
-        const finalReviewerUrl = reviewerUrl || config.reviewerUrl || finalWorkerUrl;
-        const finalReviewerModel = reviewerModel || config.reviewerModel || finalWorkerModel;
-        const finalReviewerKeys = reviewerKeys || config.reviewerKeys || finalWorkerKeys;
+        let finalReviewerUrl = reviewerUrl || config.reviewerUrl || finalWorkerUrl;
+        let finalReviewerModel = reviewerModel || config.reviewerModel || finalWorkerModel;
+        let finalReviewerKeys = reviewerKeys || config.reviewerKeys || finalWorkerKeys;
+
+        const isWorkerLocal = finalWorkerUrl.includes('localhost') || finalWorkerUrl.includes('127.0.0.1');
+        const isReviewerRemote = finalReviewerUrl && !finalReviewerUrl.includes('localhost') && !finalReviewerUrl.includes('127.0.0.1');
+
+        if (isWorkerLocal && (process.env.NODE_ENV === 'production' || isReviewerRemote)) {
+            if (isReviewerRemote && finalReviewerKeys && finalReviewerKeys.length > 0 && finalReviewerKeys[0] !== 'local_mode') {
+                logger.info('[ORCHESTRATE] Local worker URL detected in cloud; auto-routing Worker to Reviewer Cloud endpoint.');
+                finalWorkerUrl = finalReviewerUrl;
+                finalWorkerModel = 'llama-3.1-8b-instant';
+                finalWorkerKeys = finalReviewerKeys;
+            }
+        }
         
         const targetDir = cwd || path.join(__dirname, '..', '..');
         const filesJson = JSON.stringify(targetFiles || []);

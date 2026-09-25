@@ -79,6 +79,21 @@ async function getConfig() {
         const text = await fs.promises.readFile(path.join(__dirname, '..', 'config.json'), 'utf8');
         _cachedConfig = JSON.parse(text);
     } catch (_) { _cachedConfig = {}; }
+
+    if (process.env.GROQ_API_KEY || (process.env.NODE_ENV === 'production' && _cachedConfig.workerUrl && _cachedConfig.workerUrl.includes('127.0.0.1'))) {
+        const groqKey = process.env.GROQ_API_KEY || (_cachedConfig.reviewerKeys && _cachedConfig.reviewerKeys[0]) || '';
+        if (groqKey && groqKey !== 'local_mode') {
+            _cachedConfig.workerUrl = 'https://api.groq.com/openai/v1/chat/completions';
+            _cachedConfig.workerModel = (_cachedConfig.workerModel && !_cachedConfig.workerModel.includes('phi3')) ? _cachedConfig.workerModel : 'llama-3.1-8b-instant';
+            _cachedConfig.workerKey = groqKey;
+            _cachedConfig.workerKeys = [groqKey];
+            _cachedConfig.reviewerUrl = 'https://api.groq.com/openai/v1/chat/completions';
+            _cachedConfig.reviewerModel = 'llama-3.3-70b-versatile';
+            _cachedConfig.reviewerKey = groqKey;
+            _cachedConfig.reviewerKeys = [groqKey];
+        }
+    }
+
     return _cachedConfig;
 }
 function invalidateConfigCache() { _cachedConfig = null; }
