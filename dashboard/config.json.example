@@ -1,10 +1,10 @@
 {
-    "workerUrl": "http://127.0.0.1:11434/v1/chat/completions",
-    "workerModel": "phi3:mini",
+    "workerUrl": "https://api.groq.com/openai/v1/chat/completions",
+    "workerModel": "llama-3.1-8b-instant",
     "workerKeys": [
-        "local_mode"
+        "your_groq_api_key_here"
     ],
-    "workerKey": "local_mode",
+    "workerKey": "your_groq_api_key_here",
     "reviewerUrl": "https://api.groq.com/openai/v1/chat/completions",
     "reviewerModel": "llama-3.3-70b-versatile",
     "reviewerKeys": [

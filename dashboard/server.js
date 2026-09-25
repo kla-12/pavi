@@ -259,9 +259,43 @@ async function startupValidator() {
     }
 
     const configPath = path.join(__dirname, 'config.json');
+    let cfg = null;
+
     if (fs.existsSync(configPath)) {
-        const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        
+        try {
+            cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        } catch (e) {
+            logger.warn('[WARNING] Could not parse config.json:', e.message);
+        }
+    } else {
+        const examplePath = path.join(__dirname, 'config.json.example');
+        if (fs.existsSync(examplePath)) {
+            logger.info('[SERVER] config.json not found. Initializing from config.json.example...');
+            try {
+                fs.copyFileSync(examplePath, configPath);
+                cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            } catch (e) {
+                logger.warn('[WARNING] Could not initialize config.json from example:', e.message);
+            }
+        }
+    }
+
+    if (cfg) {
+        // Auto-inject GROQ_API_KEY from environment if present (ideal for Render / Cloud 24/7)
+        if (process.env.GROQ_API_KEY) {
+            const groqKey = process.env.GROQ_API_KEY.trim();
+            cfg.workerUrl = 'https://api.groq.com/openai/v1/chat/completions';
+            cfg.workerModel = (cfg.workerModel && !cfg.workerModel.includes('phi3')) ? cfg.workerModel : 'llama-3.1-8b-instant';
+            cfg.workerKey = groqKey;
+            cfg.workerKeys = [groqKey];
+            cfg.reviewerUrl = 'https://api.groq.com/openai/v1/chat/completions';
+            cfg.reviewerModel = 'llama-3.3-70b-versatile';
+            cfg.reviewerKey = groqKey;
+            cfg.reviewerKeys = [groqKey];
+            try { fs.writeFileSync(configPath, JSON.stringify(cfg, null, 4)); } catch (_) {}
+            logger.info('[SERVER] Configured Groq Cloud AI for Worker and Reviewer via GROQ_API_KEY.');
+        }
+
         try {
             const localBot2 = require('./local-bot');
             localBot2.configure(cfg);
@@ -290,20 +324,7 @@ async function startupValidator() {
             logger.warn('[WARNING] No GitHub token found in config or GITHUB_TOKEN env. Ingestion rate limits will be restricted.');
         }
     } else {
-        const examplePath = path.join(__dirname, 'config.json.example');
-        if (fs.existsSync(examplePath)) {
-            logger.info('[SERVER] config.json not found. Initializing from config.json.example...');
-            try {
-                fs.copyFileSync(examplePath, configPath);
-                const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-                const localBot2 = require('./local-bot');
-                localBot2.configure(cfg);
-            } catch (e) {
-                logger.warn('[WARNING] Could not initialize config.json from example:', e.message);
-            }
-        } else {
-            logger.warn('[WARNING] config.json and config.json.example not found. Proceeding with degraded config.');
-        }
+        logger.warn('[WARNING] No configuration could be loaded. Proceeding with degraded config.');
     }
 
     await startNgrokTunnel();
