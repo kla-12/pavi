@@ -8,12 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <!-- Pavi Evolution: Mermaid live graph -->
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-  <script>mermaid.initialize({ startOnLoad: false, theme: 'dark', themeVariables: { primaryColor: '#6366f1', edgeLabelBackground: '#1a1a2e', lineColor: '#a78bfa' } });</script>
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
+  <!-- Core real-time socket (deferred, non-blocking) -->
+  <script src="/socket.io/socket.io.js" defer></script>
 </head>
 <body class="dark-theme">
   <!-- Background Elements -->
@@ -311,35 +307,6 @@
           </div>
         </section>
 
-        <!-- Swarm History Panel -->
-        <section id="history-panel" class="panel">
-          <div class="cards-grid" style="grid-template-columns: 350px 1fr; gap: 1.5rem; height: calc(100vh - 200px); align-items: stretch;">
-            <!-- Left Column: History List -->
-            <div class="card glass-card" style="display: flex; flex-direction: column; padding: 1rem; height: 100%; overflow: hidden;">
-              <h3 style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
-                <span><i class="icon">📜</i> Past Runs</span>
-                <button id="btn-refresh-history" class="btn btn-secondary" style="padding: 0.3rem 0.5rem; font-size: 0.8rem;">Refresh</button>
-              </h3>
-              <div id="history-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;">
-                <div style="color: var(--text-secondary); text-align: center; padding: 2rem;">No history found.</div>
-              </div>
-            </div>
-
-            <!-- Right Column: Run Details -->
-            <div class="card glass-card" style="display: flex; flex-direction: column; padding: 1rem; height: 100%; overflow: hidden;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h3>Run Details</h3>
-                <div id="history-actions" style="display: none; gap: 0.5rem;">
-                  <button id="btn-replay-run" class="btn btn-primary" style="padding: 0.4rem 1rem;">▶ Replay</button>
-                  <button id="btn-delete-run" class="btn btn-danger" style="padding: 0.4rem 1rem;">🗑 Delete</button>
-                </div>
-              </div>
-              <div id="history-detail-view" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 1rem; border: 1px solid var(--glass-border);">
-                <div style="color: var(--text-secondary); text-align: center; padding: 2rem;">Select a run to view details.</div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         <!-- Cloud Sync Panel -->
         <section id="sync-panel" class="panel">
@@ -512,19 +479,7 @@
           </div>
         </section>
 
-        <!-- Skills Panel (Hidden as it is visual only and confusing) -->
-        <section id="skills-panel" class="panel" style="display: none;">
-          <div class="cards-grid">
-             <div class="card glass-card full-width">
-                <h3>Skills Overview</h3>
-                <p>Invoke skills directly using the `$skill-name` format in your workflow.</p>
-                <div class="skills-list" id="dynamic-skills-list">
-                    <!-- Skills will be injected here dynamically by app.js -->
-                    <div class="skill-tag" style="opacity:0.5;">Loading skills...</div>
-                </div>
-             </div>
-          </div>
-        </section>
+
 
         <!-- Bot Roles Panel -->
         <section id="bot-roles-panel" class="panel">

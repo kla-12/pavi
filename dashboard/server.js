@@ -6,9 +6,11 @@ const fs = require('fs');
 const path = require('path');
 const { exec, spawn } = require('child_process');
 const cookieParser = require('cookie-parser');
+const compression = require('compression');
 const pluginLoader = require('./services/plugin-loader');
 
 const app = express();
+app.use(compression());
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");

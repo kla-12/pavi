@@ -885,7 +885,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ── Pavi Evolution: Live Mermaid Graph Renderer ──────────────────────────
+  // ── Pavi Evolution: Dynamic Lazy Mermaid Graph Loader ─────────────────────
+  let mermaidLoadingPromise = null;
+  function ensureMermaid() {
+    if (window.mermaid) return Promise.resolve(window.mermaid);
+    if (mermaidLoadingPromise) return mermaidLoadingPromise;
+    mermaidLoadingPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';
+      s.onload = () => {
+        if (window.mermaid) {
+          window.mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            themeVariables: { primaryColor: '#6366f1', edgeLabelBackground: '#1a1a2e', lineColor: '#a78bfa' }
+          });
+        }
+        resolve(window.mermaid);
+      };
+      s.onerror = (err) => {
+        mermaidLoadingPromise = null;
+        reject(err);
+      };
+      document.head.appendChild(s);
+    });
+    return mermaidLoadingPromise;
+  }
+
   async function renderMermaid(diagramCode) {
     const container = document.getElementById('mermaid-container');
     const output = document.getElementById('mermaid-output');
@@ -893,11 +919,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!container || !output) return;
 
     container.style.display = 'block';
-    if (skeleton) skeleton.textContent = 'Rendering...';
+    if (skeleton) skeleton.textContent = 'Loading graph engine...';
 
     try {
+      await ensureMermaid();
+      if (skeleton) skeleton.textContent = 'Rendering...';
       const id = 'mermaid-graph-' + Date.now();
-      const { svg } = await mermaid.render(id, diagramCode);
+      const { svg } = await window.mermaid.render(id, diagramCode);
       output.innerHTML = svg;
       if (skeleton) skeleton.style.display = 'none';
     } catch (e) {
@@ -1237,6 +1265,24 @@ document.addEventListener('DOMContentLoaded', () => {
                           magicOutput.textContent = ''; // clear it
                           
                           let rawBuffer = '';
+                          let pendingChunk = '';
+                          let rafPending = false;
+                          const flushChunk = () => {
+                              if (pendingChunk) {
+                                  magicOutput.appendChild(document.createTextNode(pendingChunk));
+                                  pendingChunk = '';
+                                  const parent = magicOutput.parentElement;
+                                  if (parent) parent.scrollTop = parent.scrollHeight;
+                              }
+                              rafPending = false;
+                          };
+                          const queueChunk = (text) => {
+                              pendingChunk += text;
+                              if (!rafPending) {
+                                  rafPending = true;
+                                  requestAnimationFrame(flushChunk);
+                              }
+                          };
                           
                           while (true) {
                               const { done, value } = await reader.read();
@@ -1247,8 +1293,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                   chunk = processMagicStreamChunk(chunk);
                               }
                               
-                              magicOutput.textContent += chunk;
-                              magicOutput.parentElement.scrollTop = magicOutput.parentElement.scrollHeight;
+                              queueChunk(chunk);
                               
                               rawBuffer += chunk;
                               let lines = rawBuffer.split('\n');
@@ -1280,6 +1325,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                   }
                               }
                           }
+                          flushChunk();
                       }
                       
                       addTimelineItem("Done! 🎉", "Prototype ready! Type your next instruction below.", "🎉");
@@ -2720,11 +2766,33 @@ document.addEventListener('DOMContentLoaded', () => {
       }
   }
 
-  function initMonacoDiffEditor(originalContent, proposedContent, fileExtension) {
+  let monacoLoaderPromise = null;
+  function ensureMonacoLoader() {
+      if (typeof require !== 'undefined' && require.config) return Promise.resolve();
+      if (monacoLoaderPromise) return monacoLoaderPromise;
+      monacoLoaderPromise = new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js';
+          s.onload = () => resolve();
+          s.onerror = (err) => {
+              monacoLoaderPromise = null;
+              reject(err);
+          };
+          document.head.appendChild(s);
+      });
+      return monacoLoaderPromise;
+  }
+
+  async function initMonacoDiffEditor(originalContent, proposedContent, fileExtension) {
       if (!monacoLoaded) {
+          try {
+              await ensureMonacoLoader();
+          } catch (e) {
+              console.warn("Monaco loader failed to load:", e);
+              createBasicLcsDiff(originalContent, proposedContent);
+              return;
+          }
           if (typeof require === 'undefined') {
-              console.error("Monaco loader.js not loaded yet.");
-              // Fallback to basic LCS line diff viewer
               createBasicLcsDiff(originalContent, proposedContent);
               return;
           }
