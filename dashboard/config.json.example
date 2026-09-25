@@ -1,12 +1,12 @@
 {
     "workerUrl": "https://api.groq.com/openai/v1/chat/completions",
-    "workerModel": "llama-3.1-8b-instant",
+    "workerModel": "openai/gpt-oss-20b",
     "workerKeys": [
         "your_groq_api_key_here"
     ],
     "workerKey": "your_groq_api_key_here",
     "reviewerUrl": "https://api.groq.com/openai/v1/chat/completions",
-    "reviewerModel": "llama-3.3-70b-versatile",
+    "reviewerModel": "openai/gpt-oss-120b",
     "reviewerKeys": [
         "your_groq_api_key_here"
     ],

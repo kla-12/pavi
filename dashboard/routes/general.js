@@ -276,7 +276,7 @@ router.post('/plan', async (req, res) => {
         // Fallback to Reviewer (Groq Cloud) API
         if (!planText && (reviewerUrl || groqKey)) {
             const fallbackUrl = reviewerUrl || 'https://api.groq.com/openai/v1/chat/completions';
-            const fallbackModel = reviewerModel || 'llama-3.3-70b-versatile';
+            const fallbackModel = (reviewerModel && !reviewerModel.includes('llama')) ? reviewerModel : 'openai/gpt-oss-120b';
             const fallbackKeys = (reviewerKeys && reviewerKeys.length > 0) ? reviewerKeys : [groqKey];
 
             for (const key of fallbackKeys) {

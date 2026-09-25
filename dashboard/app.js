@@ -1180,7 +1180,8 @@ document.addEventListener('DOMContentLoaded', () => {
               });
               
               if (!planRes.ok) {
-                  addTimelineItem("Encountered an Issue", "Failed to generate plan.", "❌");
+                  const errJson = await planRes.json().catch(() => ({}));
+                  addTimelineItem("Encountered an Issue", errJson.error || "Failed to generate plan.", "❌");
                   setBuildRunningState(false);
                   return;
               }

@@ -84,11 +84,11 @@ async function getConfig() {
         const groqKey = process.env.GROQ_API_KEY || (_cachedConfig.reviewerKeys && _cachedConfig.reviewerKeys[0]) || '';
         if (groqKey && groqKey !== 'local_mode') {
             _cachedConfig.workerUrl = 'https://api.groq.com/openai/v1/chat/completions';
-            _cachedConfig.workerModel = (_cachedConfig.workerModel && !_cachedConfig.workerModel.includes('phi3')) ? _cachedConfig.workerModel : 'llama-3.1-8b-instant';
+            _cachedConfig.workerModel = (_cachedConfig.workerModel && !_cachedConfig.workerModel.includes('phi3')) ? _cachedConfig.workerModel : 'openai/gpt-oss-20b';
             _cachedConfig.workerKey = groqKey;
             _cachedConfig.workerKeys = [groqKey];
             _cachedConfig.reviewerUrl = 'https://api.groq.com/openai/v1/chat/completions';
-            _cachedConfig.reviewerModel = 'llama-3.3-70b-versatile';
+            _cachedConfig.reviewerModel = 'openai/gpt-oss-120b';
             _cachedConfig.reviewerKey = groqKey;
             _cachedConfig.reviewerKeys = [groqKey];
         }

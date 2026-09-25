@@ -288,11 +288,11 @@ async function startupValidator() {
         if (process.env.GROQ_API_KEY) {
             const groqKey = process.env.GROQ_API_KEY.trim();
             cfg.workerUrl = 'https://api.groq.com/openai/v1/chat/completions';
-            cfg.workerModel = (cfg.workerModel && !cfg.workerModel.includes('phi3')) ? cfg.workerModel : 'llama-3.1-8b-instant';
+            cfg.workerModel = (cfg.workerModel && !cfg.workerModel.includes('phi3')) ? cfg.workerModel : 'openai/gpt-oss-20b';
             cfg.workerKey = groqKey;
             cfg.workerKeys = [groqKey];
             cfg.reviewerUrl = 'https://api.groq.com/openai/v1/chat/completions';
-            cfg.reviewerModel = 'llama-3.3-70b-versatile';
+            cfg.reviewerModel = 'openai/gpt-oss-120b';
             cfg.reviewerKey = groqKey;
             cfg.reviewerKeys = [groqKey];
             try { fs.writeFileSync(configPath, JSON.stringify(cfg, null, 4)); } catch (_) {}
