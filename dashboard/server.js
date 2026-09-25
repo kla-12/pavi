@@ -235,6 +235,9 @@ async function startNgrokTunnel() {
                 detached: true,
                 stdio: 'ignore'
             });
+            ngrokProcess.on('error', (err) => {
+                logger.warn('[SERVER] Could not auto-start ngrok (ngrok binary not found in PATH):', err.message);
+            });
             ngrokProcess.unref();
             logger.info('[SERVER] ngrok process spawned.');
         }

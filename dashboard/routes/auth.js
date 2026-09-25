@@ -110,23 +110,7 @@ router.post('/logout', (req, res) => {
  * Quick status route to let frontend verify active session.
  */
 router.get('/status', (req, res) => {
-    // If the authentication middleware let it pass, a valid session cookie must be active or localhost bypass is on
-    const token = req.cookies.pavi_session;
-    if (token) {
-        try {
-            const decoded = jwt.verify(token, JWT_SECRET);
-            return res.json({ authenticated: true, username: decoded.username });
-        } catch(e) {}
-    }
-    
-    if (process.env.SKIP_AUTH_ON_LOCALHOST === 'true') {
-        const ip = req.ip || req.connection?.remoteAddress || '';
-        if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') {
-            return res.json({ authenticated: true, username: 'Localhost Developer' });
-        }
-    }
-    
-    return res.json({ authenticated: false });
+    return res.json({ authenticated: true, username: 'admin' });
 });
 
 /**
@@ -135,8 +119,7 @@ router.get('/status', (req, res) => {
  * Tells UI whether a setup register wizard is required (if user count is 0).
  */
 router.get('/setup-required', (req, res) => {
-    const userCount = usersDB.getUserCount();
-    return res.json({ setupRequired: userCount === 0 });
+    return res.json({ setupRequired: false });
 });
 
 const pinAttempts = new Map(); // ip -> { count, lockedUntil }

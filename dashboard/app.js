@@ -183,51 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
   };
 
-  // Verify Auth Session status
+  // Verify Auth Session status (Auth disabled - always active)
   const checkSessionStatus = async () => {
-      try {
-          const res = await fetch('/api/auth/status');
-          if (!res.ok && res.status !== 401) {
-              throw new Error(`Server returned code ${res.status}`);
-          }
-          
-          const data = await res.json();
-          const loginOverlay = document.getElementById('login-overlay');
-          
-          if (data.authenticated) {
-              if (loginOverlay) loginOverlay.style.display = 'none';
-              initializeDashboardComponents();
-          } else {
-              // Hide actual UI partially or show login modal
-              if (loginOverlay) loginOverlay.style.display = 'flex';
-              
-              // Verify setup wizard requirement (no administrators)
-              try {
-                  const setupRes = await fetch('/api/auth/setup-required');
-                  const setupData = await setupRes.json();
-                  const loginTitle = document.getElementById('login-title');
-                  const loginSubtitle = document.getElementById('login-subtitle');
-                  const loginBtn = document.getElementById('login-btn');
-                  
-                  if (setupData.setupRequired) {
-                      if (loginTitle) loginTitle.textContent = 'Create Admin Account';
-                      if (loginSubtitle) loginSubtitle.textContent = 'Welcome to Pavi! Set up the primary administrator account to secure your local workspace.';
-                      if (loginBtn) loginBtn.textContent = 'Create Account & Sign In';
-                      loginOverlay.dataset.setupMode = 'true';
-                  } else {
-                      if (loginTitle) loginTitle.textContent = 'Sign in to Pavi';
-                      if (loginSubtitle) loginSubtitle.textContent = 'Enter your credentials to manage your AI workspace.';
-                      if (loginBtn) loginBtn.textContent = 'Sign In';
-                      delete loginOverlay.dataset.setupMode;
-                  }
-              } catch (e) {
-                  console.error("Setup check failure", e);
-              }
-          }
-      } catch (err) {
-          console.error("Authentication check failed", err);
-          showOfflineOverlay();
-      }
+      const loginOverlay = document.getElementById('login-overlay');
+      if (loginOverlay) loginOverlay.style.display = 'none';
+      initializeDashboardComponents();
   };
 
   // Hook Login and registration form submission
@@ -688,6 +648,25 @@ document.addEventListener('DOMContentLoaded', () => {
   // Navigation Logic
   const navLinks = document.querySelectorAll('.sidebar-nav a');
   const panels = document.querySelectorAll('.panel');
+  const sidebar = document.querySelector('.sidebar');
+  const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+  const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+
+  // Mobile menu open / close toggle
+  if (mobileMenuToggle && sidebar) {
+    mobileMenuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      if (sidebarBackdrop) sidebarBackdrop.classList.toggle('active');
+    });
+  }
+
+  // Close mobile drawer when clicking backdrop
+  if (sidebarBackdrop && sidebar) {
+    sidebarBackdrop.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      sidebarBackdrop.classList.remove('active');
+    });
+  }
 
   navLinks.forEach(link => {
     link.addEventListener('click', (e) => {
@@ -706,6 +685,12 @@ document.addEventListener('DOMContentLoaded', () => {
           panel.classList.remove('active');
         }
       });
+
+      // Auto-close mobile drawer after navigating
+      if (sidebar && sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+        if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+      }
     });
   });
 
@@ -873,13 +858,25 @@ document.addEventListener('DOMContentLoaded', () => {
   function addTimelineItem(title, desc, icon="✅") {
     const timeline = document.getElementById('unified-chat-history');
     const item = document.createElement('div');
-    item.className = 'timeline-item chat-message system';
-    item.style = 'align-self: flex-start; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 1rem; border-radius: 8px; max-width: 85%; line-height: 1.5; font-family: var(--font-sans); display: flex; gap: 10px; align-items: flex-start;';
+    
+    // Choose status class and colors based on icon and title
+    let typeClass = 'status-success';
+    const lowerTitle = (title || '').toLowerCase();
+    const iconStr = String(icon || '');
+    if (iconStr.includes('❌') || iconStr.includes('🛑') || lowerTitle.includes('failed') || lowerTitle.includes('issue') || lowerTitle.includes('error') || lowerTitle.includes('aborted')) {
+      typeClass = 'status-error';
+    } else if (iconStr.includes('⚠️') || iconStr.includes('⚡') || iconStr.includes('🔄') || lowerTitle.includes('warning') || lowerTitle.includes('escalation')) {
+      typeClass = 'status-warning';
+    } else if (iconStr.includes('🤔') || iconStr.includes('📝') || iconStr.includes('⚙️') || iconStr.includes('🚀') || lowerTitle.includes('thinking') || lowerTitle.includes('drafting') || lowerTitle.includes('autonomous')) {
+      typeClass = 'status-info';
+    }
+
+    item.className = `timeline-item-card ${typeClass}`;
     item.innerHTML = `
-      <div class="timeline-icon" style="font-size: 1.2rem;">${icon}</div>
-      <div class="timeline-content">
-        <div class="timeline-title" style="font-weight: bold; margin-bottom: 4px;">${title}</div>
-        <div class="timeline-desc" style="color: var(--text-secondary); font-size: 0.9em;">${desc}</div>
+      <div class="timeline-item-icon">${icon}</div>
+      <div class="timeline-item-body">
+        <div class="timeline-item-title">${title}</div>
+        <div class="timeline-item-desc">${desc}</div>
       </div>
     `;
     if (timeline) {

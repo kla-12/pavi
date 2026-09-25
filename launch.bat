@@ -63,6 +63,13 @@ echo.
 echo ✅ Ruflo is now running!
 echo    Ollama:    http://127.0.0.1:11434
 echo    Dashboard: http://localhost:3000
+for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4 Address"') do (
+    set "LANIP=%%a"
+    goto :show_lan
+)
+:show_lan
+set "LANIP=%LANIP: =%"
+echo    Mobile:    http://%LANIP%:3000/mobile  (PIN: 123456)
 echo.
 echo You can close this window, but keep the "Ruflo Backend" and "Ollama Server" windows open.
 pause

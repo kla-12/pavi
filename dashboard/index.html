@@ -21,13 +21,18 @@
   <div class="bg-shape bg-shape-2"></div>
   <div class="bg-shape bg-shape-3"></div>
 
+  <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
   <div class="dashboard-container glass-panel">
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="logo">
-          <div class="logo-icon"></div>
-          <h1>Pavi</h1>
+          <div class="logo-icon">✨</div>
+          <div class="logo-text">
+            <h1>Pavi</h1>
+            <span class="logo-sub">AI Platform</span>
+          </div>
         </div>
       </div>
       <nav class="sidebar-nav">
@@ -51,56 +56,69 @@
           <li><a href="#" data-target="architect-panel"><i class="icon">👑</i> Supreme Architect</a></li>
         </ul>
       </nav>
-      <div class="sidebar-footer" style="flex-direction: column; align-items: flex-start; gap: 1rem; width: 100%;">
-        <label class="toggle-switch">
-          <input type="checkbox" id="advanced-mode-toggle">
-          <span class="slider round"></span>
-          <span class="toggle-label">Advanced Mode</span>
-        </label>
-        <div style="display: flex; gap: 0.5rem; width: 100%; align-items: center;">
-          <button id="theme-toggle" class="btn-icon" aria-label="Toggle Theme" style="flex-shrink: 0;">
+      <div class="sidebar-footer">
+        <div class="sidebar-controls-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="advanced-mode-toggle">
+            <span class="slider round"></span>
+            <span class="toggle-label">Advanced Mode</span>
+          </label>
+          <button id="theme-toggle" class="btn-icon" aria-label="Toggle Theme" title="Toggle Light/Dark Theme">
             <span class="sun-icon">☀️</span>
             <span class="moon-icon">🌙</span>
           </button>
-          <button id="logout-btn" style="flex: 1; border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px; justify-content: center; background: rgba(239, 68, 68, 0.05); color: #f87171; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.15)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.05)'">
+          <button id="logout-btn" style="display: none;">
             <span>🚪</span> Logout
           </button>
         </div>
+
         <!-- Model Selector Panel -->
-        <div class="card" id="model-selector-panel" style="width: 100%; margin-top: 10px; padding: 10px;">
-          <h3 style="font-size: 0.85rem; margin-top: 0; margin-bottom: 8px;">🤖 Local Model</h3>
-          <select id="local-model-select" style="width: 100%; padding: 4px; border-radius: 4px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: var(--text-primary); font-size: 0.8rem;">
+        <div class="sidebar-card" id="model-selector-panel">
+          <div class="sidebar-card-header">
+            <span>🤖 Local Model</span>
+          </div>
+          <select id="local-model-select" class="sidebar-select">
             <option value="phi3:mini">Loading models...</option>
           </select>
         </div>
+
         <!-- Health Status Panel -->
-        <div class="card" id="health-panel" style="width: 100%; margin-top: 10px; padding: 10px;">
-          <h3 style="font-size: 0.85rem; margin-top: 0; margin-bottom: 8px;">System Health</h3>
+        <div class="sidebar-card" id="health-panel">
+          <div class="sidebar-card-header">
+            <span>⚡ System Health</span>
+            <button id="refresh-health-btn" class="btn-text-action" title="Refresh health status">↻</button>
+          </div>
           <div id="health-indicators">
             <div class="health-row" id="health-db">
-              <span class="health-dot" id="dot-db"></span>
-              <span style="font-size: 0.75rem;">SQLite</span>
+              <div class="health-row-label">
+                <span class="health-dot" id="dot-db"></span>
+                <span>SQLite</span>
+              </div>
               <span class="health-detail" id="detail-db">—</span>
             </div>
             <div class="health-row" id="health-ollama">
-              <span class="health-dot" id="dot-ollama"></span>
-              <span style="font-size: 0.75rem;">Ollama</span>
+              <div class="health-row-label">
+                <span class="health-dot" id="dot-ollama"></span>
+                <span>Ollama</span>
+              </div>
               <span class="health-detail" id="detail-ollama">—</span>
             </div>
             <div class="health-row" id="health-agentdb">
-              <span class="health-dot" id="dot-agentdb"></span>
-              <span style="font-size: 0.75rem;">AgentDB</span>
+              <div class="health-row-label">
+                <span class="health-dot" id="dot-agentdb"></span>
+                <span>AgentDB</span>
+              </div>
               <span class="health-detail" id="detail-agentdb">—</span>
             </div>
             <div class="health-row" id="health-github">
-              <span class="health-dot" id="dot-github"></span>
-              <span style="font-size: 0.75rem;">GitHub API</span>
+              <div class="health-row-label">
+                <span class="health-dot" id="dot-github"></span>
+                <span>GitHub API</span>
+              </div>
               <span class="health-detail" id="detail-github">—</span>
             </div>
-            <!-- GitHub rate limit progress bar (populated by JS) -->
-            <div id="github-rate-badge" style="display:none; margin-top:6px; padding:6px 8px; background:rgba(0,0,0,0.2); border-radius:6px; border:1px solid var(--glass-border);"></div>
+            <div id="github-rate-badge" style="display:none; margin-top:6px; padding:6px 8px; background:rgba(0,0,0,0.25); border-radius:6px; border:1px solid var(--glass-border);"></div>
           </div>
-          <button id="refresh-health-btn" class="btn btn-small" style="width: 100%; margin-top: 8px; font-size: 0.75rem; padding: 4px;">↻ Refresh</button>
         </div>
       </div>
     </aside>
@@ -108,10 +126,18 @@
     <!-- Main Content -->
     <main class="main-content">
       <header class="main-header">
-        <h2>Dashboard</h2>
+        <div class="header-left">
+          <button id="mobile-menu-toggle" class="btn-icon mobile-menu-btn" aria-label="Toggle Menu" title="Open Navigation Menu">
+            <span class="hamburger-icon">☰</span>
+          </button>
+          <div>
+            <h2>Dashboard</h2>
+            <p class="header-subtitle">Enterprise Multi-Agent Orchestration & Local Bot Studio</p>
+          </div>
+        </div>
         <div class="header-actions">
-          <input type="text" id="target-dir" class="header-input glass-input" placeholder="Target Project Path (e.g. C:/my-project)" title="Leave blank to use default (pavi-main)">
-          <span class="status-badge online">System Online</span>
+          <input type="hidden" id="target-dir">
+          <span class="status-badge online"><span class="pulse-dot"></span> System Online</span>
         </div>
       </header>
 
@@ -119,42 +145,48 @@
         <!-- Magic Panel (Non-Technical Mode) -->
         <section id="magic-panel" class="panel active">
           <!-- Workspace Settings (Folder, Files, etc.) -->
-          <div class="card glass-card full-width" style="margin-bottom: 0.75rem; padding: 0.75rem 1rem; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between;">
-             <div style="display: flex; gap: 0.5rem; align-items: center; flex: 1; min-width: 300px;">
-                <label for="magic-target-dir" style="margin: 0; white-space: nowrap; color: var(--text-secondary);">Workspace:</label>
-                <input type="text" id="magic-target-dir" name="magic-target-dir" placeholder="Project folder path" style="flex: 1; padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0, 0, 0, 0.2); color: white;">
-                <button type="button" class="btn btn-secondary" id="browse-folder-btn" style="padding: 0.4rem 0.8rem; border-radius: 6px;">Browse...</button>
+          <div class="workspace-bar glass-card">
+             <div class="workspace-input-group">
+                <span class="workspace-icon">📁</span>
+                <label for="magic-target-dir" class="workspace-label">Workspace:</label>
+                <input type="text" id="magic-target-dir" name="magic-target-dir" placeholder="Enter target project folder path..." class="workspace-input">
+                <button type="button" class="btn btn-secondary btn-sm" id="browse-folder-btn">Browse...</button>
              </div>
-             <div style="display: flex; gap: 0.75rem; align-items: center;">
-                <button type="button" id="pick-files-btn" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85em; border-radius: 6px;">🎯 Target Files</button>
-                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; color: var(--text-secondary); font-size: 0.85em;">
-                  <input type="checkbox" id="autonomous-toggle" style="accent-color: var(--accent-primary);"> Autonomous
+             <div class="workspace-actions-group">
+                <button type="button" id="pick-files-btn" class="btn btn-secondary btn-sm">🎯 Target Files</button>
+                <label class="autonomous-badge">
+                  <input type="checkbox" id="autonomous-toggle">
+                  <span>⚡ Autonomous Mode</span>
                 </label>
              </div>
           </div>
-          <div id="target-files-list" style="display: none; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--glass-border);"></div>
+          <div id="target-files-list" style="display: none; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; padding: 0.75rem 1rem; background: rgba(0,0,0,0.2); border-radius: 10px; border: 1px solid var(--glass-border);"></div>
 
           <!-- Unified Chat & Execution Interface -->
-          <div class="card glass-card full-width" style="display: flex; flex-direction: column; height: calc(100vh - 200px); padding: 0; overflow: hidden;">
+          <div class="magic-chat-card glass-card">
              
              <!-- Header / Status -->
-             <div class="cli-header" style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--glass-border); background: rgba(0,0,0,0.1); margin-bottom: 0;">
-                <h3 style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                  ✨ Magic Workspace
-                  <span id="magic-loading-spinner" style="display: none; font-size: 0.8em; color: var(--accent-primary);">⏳ Working...</span>
-                  <span id="magic-learning-spinner" style="display:none; font-size: 0.8em; margin-left: 10px; color: #10b981;">🧠 Background Learning Active...</span>
-                  <span id="shield-badge" style="display:none; font-size:0.78em; padding:2px 10px; border-radius:20px; background:rgba(99,102,241,0.2); border:1px solid #6366f1; color:#a78bfa;">🛡️ Shield</span>
-                </h3>
+             <div class="magic-card-header">
+                <div class="magic-title-area">
+                  <h3>✨ Magic Workspace</h3>
+                  <span id="magic-loading-spinner" class="status-pill working" style="display: none;">⏳ Working...</span>
+                  <span id="magic-learning-spinner" class="status-pill learning" style="display: none;">🧠 Learning Loop Active</span>
+                  <span id="shield-badge" class="status-pill shield" style="display: none;">🛡️ Shield</span>
+                </div>
+                <div class="magic-header-meta">
+                  <span class="meta-tag">Dual-Engine Active</span>
+                </div>
              </div>
 
              <!-- Chat / Timeline History -->
-             <div id="unified-chat-history" style="flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
-                <div class="chat-message system" style="align-self: flex-start; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); padding: 0.75rem; border-radius: 8px; max-width: 85%; line-height: 1.4; font-size: 0.9em;">
-                  <strong>Hello! I'm Pavi.</strong><br>
-                  I can write code, build projects, explain concepts, and answer your questions.<br>
-                  Type your instructions below. Use <strong>Build</strong> to execute actions or <strong>Chat</strong> to talk to me.
+             <div id="unified-chat-history" class="unified-chat-history">
+                <div class="chat-message system welcome-card">
+                  <div class="welcome-header">
+                    <span class="welcome-icon">👋</span>
+                    <strong>Welcome to Pavi Workspace</strong>
+                  </div>
+                  <p>I can write code, build features, run tests, and answer questions. Type your instructions below and click <strong>Build ✨</strong> to create or <strong>Chat 💬</strong> to discuss.</p>
                 </div>
-                <!-- Timeline items and chat messages go here -->
              </div>
 
              <!-- Mermaid live graph container (hidden by default) -->
@@ -167,30 +199,38 @@
              </div>
 
              <!-- Raw Terminal Logs Toggle -->
-             <div style="padding: 0.5rem 1.5rem; border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); display: flex; justify-content: space-between; align-items: center;">
-                <label style="cursor: pointer; font-size: 0.85em; color: var(--text-secondary); display: flex; align-items: center; gap: 5px;">
-                  <input type="checkbox" id="toggle-raw-logs" style="accent-color: var(--accent-primary);" onchange="document.getElementById('raw-terminal-container').style.display = this.checked ? 'block' : 'none';"> Show Raw Logs
+             <div class="raw-logs-bar">
+                <label class="raw-logs-toggle-label">
+                  <input type="checkbox" id="toggle-raw-logs" onchange="document.getElementById('raw-terminal-container').style.display = this.checked ? 'block' : 'none';">
+                  <span>Terminal Output & Raw Execution Logs</span>
                 </label>
              </div>
              
              <!-- Raw terminal output -->
-             <div id="raw-terminal-container" class="cli-terminal" style="display: none; border-top: 1px solid rgba(255,255,255,0.1); padding: 1rem; max-height: 150px; overflow-y: auto;">
-               <code id="magic-cli-output" style="color: #a78bfa; white-space: pre-wrap; font-family: monospace;"></code>
+             <div id="raw-terminal-container" class="cli-terminal" style="display: none; border-top: 1px solid rgba(255,255,255,0.08); padding: 1rem; max-height: 180px; overflow-y: auto;">
+               <code id="magic-cli-output" style="color: #a78bfa; white-space: pre-wrap; font-family: monospace; font-size: 0.82rem;"></code>
              </div>
 
              <!-- Input Area -->
-             <div style="padding: 1rem; border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.3);">
-                <form id="unified-action-form" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                     <button type="button" id="clarify-prompt-btn" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8em; border-radius: 6px; display: flex; align-items: center; gap: 5px;">✨ Clarify Idea</button>
-                  </div>
-                  <div style="display: flex; gap: 0.75rem; align-items: flex-end;">
-                     <textarea id="unified-prompt" rows="2" placeholder="e.g. Build me a sleek dark-mode coffee shop landing page... or How does this code work?" style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0, 0, 0, 0.2); color: var(--text-primary); font-family: var(--font-sans); font-size: 0.95rem; outline: none; resize: vertical;"></textarea>
-                     <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-                       <button type="button" class="btn btn-primary" id="unified-build-btn" style="padding: 0.6rem 1.2rem; border-radius: 6px; white-space: nowrap; font-weight: bold; min-width: 100px;">Build ✨</button>
-                       <button type="button" class="btn btn-secondary" id="unified-chat-btn" style="padding: 0.6rem 1.2rem; border-radius: 6px; white-space: nowrap; min-width: 100px;">Chat 💬</button>
-                       <button type="button" class="btn btn-danger" id="unified-cancel-btn" style="padding: 0.6rem 1.2rem; border-radius: 6px; white-space: nowrap; min-width: 100px; display: none;">Cancel 🛑</button>
-                     </div>
+             <div class="magic-input-container">
+                <form id="unified-action-form" class="unified-action-form">
+                  <div class="prompt-box-wrapper">
+                    <textarea id="unified-prompt" rows="3" placeholder="e.g. Build me a sleek dark-mode coffee shop landing page... or How does this code work?" class="prompt-textarea"></textarea>
+                    
+                    <div class="prompt-box-footer">
+                      <div class="prompt-tools-left">
+                        <button type="button" id="clarify-prompt-btn" class="btn-chip" title="Enhance and clarify instructions">
+                          <span>✨ Clarify Idea</span>
+                        </button>
+                        <span class="prompt-tip">Shift + Enter for new line</span>
+                      </div>
+                      
+                      <div class="prompt-actions-right">
+                        <button type="button" class="btn btn-secondary btn-chat" id="unified-chat-btn">Chat 💬</button>
+                        <button type="button" class="btn btn-primary btn-build" id="unified-build-btn">Build ✨</button>
+                        <button type="button" class="btn btn-danger btn-sm" id="unified-cancel-btn" style="display: none;">Cancel 🛑</button>
+                      </div>
+                    </div>
                   </div>
                 </form>
              </div>

@@ -1,0 +1,78 @@
+# Product Requirements Document (PRD) — RuFlo v3.5 & Pavi
+
+> **Document Status:** Active Canonical PRD  
+> **Platform Version:** RuFlo v3.5 / Pavi Enterprise  
+> **Target Audience:** AI Engineers, Full-Stack Developers, Swarm Architects, System Operators  
+> **Last Updated:** 2026-09-25
+
+---
+
+## 1. Executive Summary & Vision
+
+**RuFlo v3.5** (formerly *Claude Flow*) and its visual command center **Pavi** represent an enterprise-grade AI agent orchestration platform. The system coordinates specialized AI agent swarms to analyze, build, test, and self-optimize complex software engineering workflows.
+
+### 1.1 The Core Problem
+* **Single LLM Limitations:** Standalone LLM sessions suffer from rapid context degradation, hallucinations, lack of specialized domain depth, and high token costs.
+* **Lack of Self-Correction:** When a single agent makes a mistake, it tends to double down on errors without an independent reviewer or verification harness.
+* **Cloud API Dependency & Cost:** Heavy reliance on external paid API calls limits developer agility and compromises privacy when working with proprietary codebases.
+
+### 1.2 The Solution
+RuFlo introduces a **hierarchical multi-agent swarm architecture** paired with **local model acceleration (Ollama)** and **high-performance Rust/WASM kernels**. Pavi provides an interactive dashboard, real-time observability, maker-checker consensus, and remote mobile PWA access.
+
+---
+
+## 2. Target User Personas
+
+| Persona | Primary Goal | Key Workflows & Features Used |
+|---------|--------------|-------------------------------|
+| **AI Software Engineer** | Automate multi-file code generation and bug fixes | CLI commands (`claude-flow`), Swarm Task Tool, Magic Workspace |
+| **Swarm Architect** | Design specialized agent teams and consensus rules | Topology design (Hierarchical, Mesh, Ring), AgentDB, Raft consensus |
+| **DevOps / SysAdmin** | Self-host local models with high security and zero leakage | Ollama local bot (`phi3:mini`, `qwen2.5-coder`), offline fallback |
+| **Tech Lead / Reviewer** | Verify code quality and audit agent outputs | Maker-Checker engine, audit logs, Quality Score (0–100) |
+
+---
+
+## 3. Implemented Feature Scope
+
+### 3.1 Multi-Agent Swarm Orchestration
+* **16+ Specialized Agent Roles:** Architect, Coder, Reviewer, Tester, Security Auditor, Ingester, Harvester, Gap Detector, etc.
+* **Anti-Drift Topologies:** Hierarchical coordinator-worker structure, ring pipelines, and collaborative meshes.
+* **Raft & Hive-Mind Consensus:** Dynamic voting mechanisms to select the highest-accuracy output.
+* **3-Tier Model Routing (ADR-026):**
+  - **Tier 1 (WASM Boosters):** Sub-millisecond, zero-cost AST transformations (`var-to-const`, `add-types`, `add-logging`).
+  - **Tier 2 (Fast Tier):** Low-cost, high-speed models for routine tasks.
+  - **Tier 3 (Reasoning Tier):** High-capacity models (Claude 3.7/Sonnet, GPT-4o, DeepSeek) for architecture and security audits.
+
+### 3.2 Pavi Interactive Web Dashboard
+* **Glassmorphic Control Center:** Single-page dashboard served at `http://localhost:3000`.
+* **Magic Workspace:** Natural language prompt console with 1-click `Build` and `Chat` actions.
+* **Local Model Selector:** Auto-detection and hot-swapping of local Ollama models.
+* **Maker-Checker Engine:** Dual-bot workflow where Worker generates code and Reviewer tests/scores output before committing.
+* **Live System Health:** Real-time diagnostics for SQLite, Ollama endpoint, Memory, and WASM router state.
+
+### 3.3 Vector Memory & Self-Improving Mesh (RuVector & AgentDB)
+* **Persistent Pattern Storage:** HNSW vector index storing successful architectural patterns and prompt-topology mappings.
+* **Automatic Quality Scoring:** Reviewer evaluates swarm runs on a 0–100 quality scale; low-scoring runs trigger automatic re-prompting.
+* **Self-Optimizing Learning Loop:** Historical telemetry refines future agent assignments.
+
+### 3.4 Local AI Bot Integration (Ollama)
+* **Zero-Cost Local Intelligence:** Direct integration with `http://127.0.0.1:11434`.
+* **Recommended Models:**
+  - `phi3:mini` (2.2 GB) — Lightweight, budget-friendly baseline.
+  - `qwen2.5-coder:7b` — High-accuracy code generation.
+  - `llama3.2:3b` — Ultra-low footprint.
+* **Automatic Server Provisioning:** Automated check and startup via `launch.bat`.
+
+### 3.5 Mobile Connect & PWA Remote Control
+* **Cross-Device Control:** Responsive PWA accessible via LAN (`http://<local-ip>:3000/mobile`) and optional ngrok tunnel.
+* **QR Code Pairing:** Dashboard generates instant pairing QR code for phone scanning.
+* **Streamlined Mobile View:** Pocket dashboard optimized for status monitoring, job queue inspection, and remote approvals.
+
+---
+
+## 4. Planned & Future Enhancements
+
+* [ ] **Distributed Multi-Machine Swarms:** Running agents across heterogeneous LAN nodes.
+* [ ] **Autonomous Code Sandbox (Dockerized):** Isolated ephemeral containers for running untrusted code generated by agents.
+* [ ] **Voice Control & Audio Telemetry (RuVocal):** Natural voice prompting and audible status alerts.
+* [ ] **Automated Benchmark Arena:** Nightly automated tournament comparing model outputs across coding benchmark suites.
