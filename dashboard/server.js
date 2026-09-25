@@ -12,13 +12,20 @@ const app = express();
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
+function isAllowedOrigin(origin) {
+    if (!origin || origin === 'null') return true;
+    return origin.includes('localhost') || origin.includes('127.0.0.1')
+        || origin.includes('192.168.') || origin.includes('10.') || origin.includes('172.')
+        || origin.includes('onrender.com') || origin.includes('railway.app') || origin.includes('loca.lt')
+        || origin.includes('trycloudflare.com') || origin.includes('ngrok-free.app')
+        || origin.includes('ngrok.io') || origin.includes('ngrok-free.dev')
+        || process.env.NODE_ENV === 'production';
+}
+
 const io = new Server(server, {
     cors: {
         origin: (origin, cb) => {
-            if (!origin) return cb(null, true);
-            const ok = origin.includes('localhost') || origin.includes('127.0.0.1')
-                || origin.includes('192.168.') || origin.includes('10.') || origin.includes('172.')
-                || origin.includes('ngrok-free.app') || origin.includes('ngrok.io') || origin.includes('ngrok-free.dev');
+            const ok = isAllowedOrigin(origin);
             cb(ok ? null : new Error('CORS'), ok);
         },
         credentials: true
@@ -83,11 +90,7 @@ async function supreme_architect_init() {
 // ── Express Middlewares ──────────────────────────────────────────────────────
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
-        const isLAN = origin.includes('192.168.') || origin.includes('10.') || origin.includes('172.');
-        const isNgrok = origin.includes('ngrok-free.app') || origin.includes('ngrok.io') || origin.includes('ngrok-free.dev');
-        if (isLocalhost || isLAN || isNgrok || origin === 'null') {
+        if (isAllowedOrigin(origin)) {
             callback(null, true);
         } else {
             callback(new Error('Blocked by CORS'));
